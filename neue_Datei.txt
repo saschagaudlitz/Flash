@@ -1,2 +1,6 @@
 HALLO SASCHIIIII
+<<<<<<< HEAD
 zutzutzutig
+=======
+Hallo Eric
+>>>>>>> 8211eeeaa87e58c38a4aa405d4e4c434bcbedfbc
