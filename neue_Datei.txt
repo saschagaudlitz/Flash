@@ -1,1 +1,6 @@
+<<<<<<< HEAD
 hallo saschiiiii
+=======
+est
+test
+>>>>>>> 4b9f67496e7c9f7b1baebc3ab95eed3a19edb5cd
