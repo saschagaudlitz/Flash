@@ -32,6 +32,7 @@ for i in range(6):
     sns.kdeplot(data = samples[i,:])
 #================================================
 
+'''
 train = torch.tensor(X_train.astype(np.float32)) 
 train = train.reshape((train.shape[0],1,train.shape[1]))
 train_tensor = data_utils.TensorDataset(train)
@@ -75,3 +76,4 @@ sampled_seq.shape # (100, 1, 6)
 
 #sns.kdeplot(data=X_train[:, 0], fill=True)
 #sns.kdeplot(data=X_train[:, 0], fill=True)
+'''
