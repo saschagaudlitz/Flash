@@ -77,3 +77,8 @@ sampled_seq.shape # (100, 1, 6)
 #sns.kdeplot(data=X_train[:, 0], fill=True)
 #sns.kdeplot(data=X_train[:, 0], fill=True)
 '''
+'''
+def f(x):
+    ignore x
+    do y
+'''
