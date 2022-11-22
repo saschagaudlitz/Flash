@@ -22,7 +22,9 @@ Note that in `mlflow` you can run an *experiment* that has several *runs*. For e
 
 ## Write a model
 
-We use `argparse` for specifying hyperparameter. Then you can run a model from the root directory of the project:
+> See `models/maf.py` for a working example.
+
+Use `argparse` for specifying hyperparameter. Then you can run a model from the root directory of the project:
 
     python3 models/maf.py --n_epochs=10 --batch_size=32 --n_hidden_features=32
 
@@ -34,7 +36,14 @@ Subclass `Trainer` for each model, and implement the following methods:
     def training_step(self, batch, batch_idx):
         return NotImplementedError()
 
-    def sample_step(self, n_samples):
+    def sample(self, n_samples):
         return NotImplementedError()
 
-See `models/maf.py` for a working example.
+Trainer exposes the following attributes:
+
+    self.model, self.optimizer
+    self.X_train, self.X_val, self.X_test
+
+## Hyperparameter tuning
+
+See `hyper.py` script.
