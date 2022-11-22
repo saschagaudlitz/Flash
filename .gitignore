@@ -12,3 +12,6 @@ __pychache__
 .ipynb_checkpoints/
 .Rhistory
 
+mlruns
+__pycache__
+
