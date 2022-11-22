@@ -3,3 +3,7 @@
 
 ## Contact
 genhack@polytechnique.fr
+
+# Workflow
+
+Note that in mlflow you can run an *experiment* that has several *runs*. For example, for hyperparameter tuning or cross-validation, you would run one experiment with multiple runs.
