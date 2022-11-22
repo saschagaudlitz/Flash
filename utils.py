@@ -32,41 +32,6 @@ def anderson_darling(X_true, X_pred):
     return ad_ind, ad_mean
 
 
-def plot_hist2d(X_true, X_pred, ri_true, ri_pred):
-    assert X_true.shape == X_pred.shape
-    n_dim = X_true.shape[1]
-
-    kendall_abs_error = np.abs(ri_pred - ri_true).mean()
-    ad_ind, ad_mean = anderson_darling(X_pred, X_true)
-
-    def plot_hists(fig, ax, X):
-        for i in range(n_dim):
-            for j in range(n_dim):
-                if i < j:
-                    ax[i][j].hist2d(X[:, i], X[:, j], bins=50, range=[[-7, 7], [-7, 7]])
-                if i > j:
-                    # delete axes below diagonal
-                    fig.delaxes(ax[i][j])
-
-    fig_true, ax = plt.subplots(nrows=n_dim, ncols=n_dim, figsize=(3 * n_dim, 3 * n_dim))
-    plot_hists(fig_true, ax, X_true)
-
-    for i in range(n_dim):
-        sns.kdeplot(data=X_true[:, i], ax=ax[i][i])
-
-    fig_pred, ax = plt.subplots(nrows=n_dim, ncols=n_dim, figsize=(3 * n_dim, 3 * n_dim))
-    plot_hists(fig_pred, ax, X_pred)
-
-    for i in range(n_dim):
-        sns.kdeplot(data=pd.DataFrame(np.array([X_true[:, i], X_pred[:, i]]).T, columns=['X_true', 'X_pred']), ax=ax[i][i])
-        ax[i][i].set_title(f"AD = {ad_ind[i]:.4f}")
-        ax[i][i].get_legend().remove()
-
-    ax[0][1].set_title(f"Kendall = {kendall_abs_error:.6f}")
-
-    return fig_true, fig_pred
-
-
 def log_test_metrics(X_true, X_pred):
 
     n_dim = X_true.shape[1]
@@ -81,17 +46,41 @@ def log_test_metrics(X_true, X_pred):
         mlflow.log_metric(f'test_ad_{i + 1}', ad_ind[i])
 
 
-def log_hist2d(X_true, X_pred, label):
+def plot_hist2d(X_true, X_pred=None):
 
-    ri_true = calculate_ri(X_true)
-    ri_pred = calculate_ri(X_pred)
+    kendall = ad_ind = None
 
-    fig_true, fig_pred = plot_hist2d(X_true, X_pred, ri_true, ri_pred)
+    if X_pred is not None:
+        kendall = kendall_absolute_error(X_true, X_pred)
+        ad_ind, ad_mean = anderson_darling(X_true, X_pred)
 
-    fig_true.canvas.draw()
-    image = Image.frombytes('RGB', fig_true.canvas.get_width_height(), fig_true.canvas.tostring_rgb())
-    mlflow.log_image(image, f'hist2d_{label}_true.png')
+    n_dim = X_true.shape[1]
 
-    fig_pred.canvas.draw()
-    image = Image.frombytes('RGB', fig_pred.canvas.get_width_height(), fig_pred.canvas.tostring_rgb())
-    mlflow.log_image(image, f'hist2d_{label}_pred.png')
+    fig, ax = plt.subplots(nrows=n_dim, ncols=n_dim, figsize=(3 * n_dim, 3 * n_dim))
+
+    for i in range(n_dim):
+        for j in range(n_dim):
+            if i < j:
+                ax[i][j].hist2d(X_true[:, i], X_true[:, j], bins=50, range=[[-7, 7], [-7, 7]])
+            if i > j:
+                # delete axes below diagonal
+                fig.delaxes(ax[i][j])
+
+    for i in range(n_dim):
+        data = pd.DataFrame(np.array([X_true[:, i], X_pred[:, i]]).T, columns=['X_true', 'X_pred']) if X_pred is not None else X_true
+        sns.kdeplot(data=data, ax=ax[i][i])
+        if ad_ind is not None:
+            ax[i][i].set_title(f"AD = {ad_ind[i]:.4f}")
+            ax[i][i].get_legend().remove()
+
+    if kendall is not None:
+        ax[0][1].set_title(f"Kendall = {kendall:.6f}")
+
+    return fig
+
+
+def log_hist2d(label, X_true, X_pred=None):
+    fig = plot_hist2d(X_true, X_pred)
+    fig.canvas.draw()
+    image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
+    mlflow.log_image(image, f'hist2d_{label}.png')

@@ -101,13 +101,10 @@ def main(args):
         X_test_pred = flow.sample(len(X_test)).detach().numpy()
         log_test_metrics(X_test, X_test_pred)
 
-        # we generate samples also for train and val datasets
-        X_train_pred = flow.sample(len(X_train)).detach().numpy()
-        X_val_pred = flow.sample(len(X_val)).detach().numpy()
-
-        log_hist2d(X_train, X_train_pred, 'train')
-        log_hist2d(X_val, X_val_pred, 'val')
-        log_hist2d(X_test, X_test_pred, 'test')
+        log_hist2d('train_true', X_train)
+        log_hist2d('val_true', X_val)
+        log_hist2d('test_true', X_test)
+        log_hist2d('test_pred', X_test_pred, X_test)
 
 
 if __name__ == '__main__':
