@@ -1,7 +1,11 @@
+import mlflow
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from PIL import Image
+
+COLS = ['s1', 's2', 's3', 's4', 's5', 's6']
 
 
 def calculate_ri(X):
@@ -16,7 +20,6 @@ def kendall_absolute_error(X_true, X_pred):
 
 
 def anderson_darling(X_true, X_pred):
-
     assert X_true.shape == X_pred.shape
     n_test = X_true.shape[0]
 
@@ -30,7 +33,6 @@ def anderson_darling(X_true, X_pred):
 
 
 def plot_hist2d(X_true, X_pred, ri_true, ri_pred):
-
     assert X_true.shape == X_pred.shape
     n_dim = X_true.shape[1]
 
@@ -63,3 +65,33 @@ def plot_hist2d(X_true, X_pred, ri_true, ri_pred):
     ax[0][1].set_title(f"Kendall = {kendall_abs_error:.6f}")
 
     return fig_true, fig_pred
+
+
+def log_test_metrics(X_true, X_pred):
+
+    n_dim = X_true.shape[1]
+
+    kendall = kendall_absolute_error(X_true, X_pred)
+    ad_ind, ad_mean = anderson_darling(X_true, X_pred)
+
+    mlflow.log_metric('test_kendall', kendall)
+    mlflow.log_metric('test_ad_mean', ad_mean)
+
+    for i in range(n_dim):
+        mlflow.log_metric(f'test_ad_{i + 1}', ad_ind[i])
+
+
+def log_hist2d(X_true, X_pred, label):
+
+    ri_true = calculate_ri(X_true)
+    ri_pred = calculate_ri(X_pred)
+
+    fig_true, fig_pred = plot_hist2d(X_true, X_pred, ri_true, ri_pred)
+
+    fig_true.canvas.draw()
+    image = Image.frombytes('RGB', fig_true.canvas.get_width_height(), fig_true.canvas.tostring_rgb())
+    mlflow.log_image(image, f'hist2d_{label}_true.png')
+
+    fig_pred.canvas.draw()
+    image = Image.frombytes('RGB', fig_pred.canvas.get_width_height(), fig_pred.canvas.tostring_rgb())
+    mlflow.log_image(image, f'hist2d_{label}_pred.png')
