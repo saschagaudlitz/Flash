@@ -6,4 +6,35 @@ genhack@polytechnique.fr
 
 # Workflow
 
-Note that in mlflow you can run an *experiment* that has several *runs*. For example, for hyperparameter tuning or cross-validation, you would run one experiment with multiple runs.
+## MLFlow
+
+We use MLFlow for model tracking.
+
+    pip install mlflow
+
+Then start the MLFlow from the root directory of the project:
+
+    mlflow server
+
+Then you can access the server under `127.0.0.1:5000`.
+
+Note that in `mlflow` you can run an *experiment* that has several *runs*. For example, for hyperparameter tuning or cross-validation, you would run one experiment with multiple runs.
+
+## Write a model
+
+We use `argparse` for specifying hyperparameter. Then you can run a model from the root directory of the project:
+
+    python3 models/maf.py --n_epochs=10 --batch_size=32 --n_hidden_features=32
+
+Subclass `Trainer` for each model, and implement the following methods:
+
+    def configure_model(self):
+        return NotImplementedError()
+
+    def training_step(self, batch, batch_idx):
+        return NotImplementedError()
+
+    def sample_step(self, n_samples):
+        return NotImplementedError()
+
+See `models/maf.py` for a working example.
