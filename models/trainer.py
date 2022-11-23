@@ -26,6 +26,10 @@ class Trainer:
         self.ri_true = calculate_ri(self.X_val)
         self.best_kendall = self.best_ad_mean = math.inf
 
+    @staticmethod
+    def get_parser():
+        return NotImplementedError()
+
     def configure_model(self):
         return NotImplementedError()
 

@@ -8,25 +8,6 @@ from PIL import Image
 COLS = ['s1', 's2', 's3', 's4', 's5', 's6']
 
 
-def main(cls, args):
-    """Main routine.
-    """
-    np.random.seed(1337)
-
-    with mlflow.start_run() as run:
-
-        trainer = cls(args, run.info.run_id)
-        mlflow.log_params(args)
-
-        # some models like KDE might not require training
-        if 'n_epochs' in args:
-            trainer.train()
-
-        kendall, ad_mean = trainer.test_step()
-        print(f"Test Kendall: {kendall:10.4f}")
-        print(f"Test AD:      {ad_mean:10.2f}")
-
-
 def calculate_ri(X):
     """Calculate order statistics for R_{i,n_test}.
     """

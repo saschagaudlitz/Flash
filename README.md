@@ -20,29 +20,36 @@ Then you can access the server under `127.0.0.1:5000`.
 
 Note that in `mlflow` you can run an *experiment* that has several *runs*. For example, for hyperparameter tuning or cross-validation, you would run one experiment with multiple runs.
 
-## Write a model
+## Model development
 
 > See `models/maf.py` for a working example.
 
-Use `argparse` for specifying hyperparameter. Then you can run a model from the root directory of the project:
+To create a new model, subclass `Trainer` and implement the following methods:
 
-    python3 models/maf.py --n_epochs=10 --batch_size=32 --n_hidden_features=32
+    # specify model hyperparameters, with argparse
+    def get_parser()
 
-Subclass `Trainer` for each model, and implement the following methods:
+    # model definition
+    def configure_model(self)
 
-    def configure_model(self):
-        return NotImplementedError()
+    # model training step
+    def training_step(self, batch, batch_idx)
 
-    def training_step(self, batch, batch_idx):
-        return NotImplementedError()
-
-    def sample(self, n_samples):
-        return NotImplementedError()
+    # sampling from the model
+    def sample(self, n_samples)
 
 Trainer exposes the following attributes:
 
     self.model, self.optimizer
     self.X_train, self.X_val, self.X_test
+
+In the end, import contents of your module in the `models/__init__.py` file, for example:
+
+    from .diffusion import *
+
+After that you can run a model from the root directory of the project by specifying the name of the class and passing arguments as follows:
+
+    python3 train.py MAF --n_epochs=10 --batch_size=32 --n_hidden_features=32
 
 ## Hyperparameter tuning
 

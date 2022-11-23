@@ -4,10 +4,20 @@ from nflows.transforms.permutations import ReversePermutation
 from nflows.distributions import StandardNormal
 from nflows.flows import Flow
 from models.trainer import Trainer
-from utils import main
 
 
 class MAF(Trainer):
+
+    @staticmethod
+    def get_parser():
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--n_layers', type=int, default=10)
+        parser.add_argument('--n_epochs', type=int, default=10)
+        parser.add_argument('--n_dim', type=int, default=6)
+        parser.add_argument('--n_hidden_features', type=int, default=32)
+        parser.add_argument('--batch_size', type=int, default=32)
+        parser.add_argument('--lr', type=float, default=1e-3)
+        return parser
 
     def configure_model(self):
         transforms = []
@@ -32,15 +42,3 @@ class MAF(Trainer):
     def sample(self, model, n_samples):
         return model.sample(n_samples).detach().numpy()
 
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--n_layers', type=int, default=10)
-    parser.add_argument('--n_epochs', type=int, default=10)
-    parser.add_argument('--n_dim', type=int, default=6)
-    parser.add_argument('--n_hidden_features', type=int, default=32)
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--lr', type=float, default=1e-3)
-
-    args = vars(parser.parse_args())
-    main(MAF, args)
