@@ -3,12 +3,10 @@ from nflows.transforms import MaskedAffineAutoregressiveTransform, CompositeTran
 from nflows.transforms.permutations import ReversePermutation
 from nflows.distributions import StandardNormal
 from nflows.flows import Flow
-from models.trainer import Trainer
+from trainer import Trainer
 from utils import main
 
-
 class MAF(Trainer):
-
     def configure_model(self):
         transforms = []
 
@@ -31,7 +29,6 @@ class MAF(Trainer):
 
     def sample(self, model, n_samples):
         return model.sample(n_samples).detach().numpy()
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
