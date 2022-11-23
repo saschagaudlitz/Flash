@@ -47,9 +47,24 @@ In the end, import contents of your module in the `models/__init__.py` file, for
 
     from .diffusion import *
 
-After that you can run a model from the root directory of the project by specifying the name of the class and passing arguments as follows:
+# Running models
+
+## From command line
+
+You can run a model from the root directory of the project by specifying the name of the class and passing arguments as follows:
 
     python3 train.py MAF --n_epochs=10 --batch_size=32 --n_hidden_features=32
+
+## From the notebook
+
+You can also run the model from the notebook, see `train.ipynb` for the example. In the notebook you can observe 2d-marginals graphically during training. For this, you need to subclass your model and implement `on_train_epoch_end` hook:
+
+    class MyMAF(MAF):
+        def on_train_epoch_end(self):
+            X_val_pred = self.sample(self.model, len(self.X_val))
+            fig = plot_hist2d(X_val_pred, self.X_val)
+            clear_output(wait=True)
+            plt.show()
 
 ## Hyperparameter tuning
 

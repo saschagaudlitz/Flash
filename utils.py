@@ -49,7 +49,7 @@ def plot_hist2d(X_true, X_pred=None):
 
     n_dim = X_true.shape[1]
 
-    fig, ax = plt.subplots(nrows=n_dim, ncols=n_dim, figsize=(3 * n_dim, 3 * n_dim))
+    fig, ax = plt.subplots(nrows=n_dim, ncols=n_dim, figsize=(3 * n_dim, 3 * n_dim - 2), constrained_layout=True)
 
     for i in range(n_dim):
         for j in range(n_dim):
@@ -93,7 +93,9 @@ def log_test_metrics(X_true, X_pred):
 def log_hist2d(label, X_true, X_pred=None):
     """Log 2d-histograms in MLFlow.
     """
+    fname = f'hist2d_{label}.png'
     fig = plot_hist2d(X_true, X_pred)
+    fig.suptitle(fname, fontsize=20)
     fig.canvas.draw()
     image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
-    mlflow.log_image(image, f'hist2d_{label}.png')
+    mlflow.log_image(image, fname)

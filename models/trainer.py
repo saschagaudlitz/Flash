@@ -10,6 +10,7 @@ import pandas as pd
 
 from utils import calculate_ri, anderson_darling, COLS, log_test_metrics, log_hist2d
 
+
 class Trainer:
     """
     Base trainer class providing abstraction for the essential elements of training a model
@@ -44,6 +45,7 @@ class Trainer:
     test_step           : Gather value of metric's  on the test set
 
     """
+
     def __init__(self, args, run_id):
         self.args = args
         self.run_id = run_id
@@ -69,6 +71,9 @@ class Trainer:
     def sample(self, model, n_samples):
         return NotImplementedError()
 
+    def on_train_epoch_end(self):
+        pass
+
     def train(self):
         """Training loop.
         """
@@ -82,6 +87,7 @@ class Trainer:
             for batch_idx, batch in enumerate(train_loader):
                 self.training_step(batch, batch_idx)
             self.validation_step(pbar=pbar)
+            self.on_train_epoch_end()
 
     def configure_datasets(self):
         """Separate dataset into training set and validation set (may vary for every training run).
