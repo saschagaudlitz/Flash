@@ -1,34 +1,29 @@
 import argparse
 import mlflow
 import numpy as np
-import pandas as pd
 from scipy.stats import gaussian_kde
 
-from utils import COLS, log_test_metrics, log_hist2d
+from models.trainer import Trainer
+from utils import main
 
 
-def main(args):
+class KDE(Trainer):
 
-    np.random.seed(1337)
+    def configure_model(self):
+        return gaussian_kde(self.X_train.T, bw_method=self.args['bw_method'])
 
-    with mlflow.start_run() as run:
+    def sample(self, model, n_samples):
+        return model.resample(n_samples).T
 
-        mlflow.log_params(vars(args))
-
-        X_train = pd.read_csv('data/df_train.csv')[COLS].to_numpy()
-        kernel = gaussian_kde(X_train.T)
-
-        X_test = pd.read_csv('data/df_test.csv')[COLS].to_numpy()
-        X_test_pred = kernel.resample(len(X_test)).T
-        log_test_metrics(X_test, X_test_pred)
-
-        log_hist2d('train_true', X_train)
-        log_hist2d('test_true', X_test)
-        log_hist2d('test_pred', X_test_pred, X_test)
+    # since there is no training, the original model is the best model
+    def load_best_model(self):
+        return self.model
 
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()
-    args = parser.parse_args()
-    main(args)
+    parser.add_argument('--n_dim', type=int, default=6)
+    parser.add_argument('--bw_method', type=str, default='silverman')
+
+    args = vars(parser.parse_args())
+    main(KDE, args)

@@ -8,8 +8,28 @@ from PIL import Image
 COLS = ['s1', 's2', 's3', 's4', 's5', 's6']
 
 
+def main(cls, args):
+    """Main routine.
+    """
+    np.random.seed(1337)
+
+    with mlflow.start_run() as run:
+
+        trainer = cls(args, run.info.run_id)
+        mlflow.log_params(args)
+
+        # some models like KDE might not require training
+        if 'n_epochs' in args:
+            trainer.train()
+
+        kendall, ad_mean = trainer.test_step()
+        print(f"Test Kendall: {kendall:10.4f}")
+        print(f"Test AD:      {ad_mean:10.2f}")
+
+
 def calculate_ri(X):
-    """Calculate order statistics for R_{i,n_test}."""
+    """Calculate order statistics for R_{i,n_test}.
+    """
     n_test = X.shape[0]
     # we can ignore j = i, since it's zero anyway
     return np.sort((X[:, None, :] < X[None, :, :]).prod(axis=2).sum(axis=1) / (n_test - 1))
@@ -32,22 +52,10 @@ def anderson_darling(X_true, X_pred):
     return ad_ind, ad_mean
 
 
-def log_test_metrics(X_true, X_pred):
-
-    n_dim = X_true.shape[1]
-
-    kendall = kendall_absolute_error(X_true, X_pred)
-    ad_ind, ad_mean = anderson_darling(X_true, X_pred)
-
-    mlflow.log_metric('test_kendall', kendall)
-    mlflow.log_metric('test_ad_mean', ad_mean)
-
-    for i in range(n_dim):
-        mlflow.log_metric(f'test_ad_{i + 1}', ad_ind[i])
-
-
 def plot_hist2d(X_true, X_pred=None):
-
+    """Plot 2d histogram of the data.
+    X_pred is optional, if provided we draw two 1d-histograms on the diagonal and metrics in plot titles.
+    """
     kendall = ad_ind = None
 
     if X_pred is not None:
@@ -67,7 +75,7 @@ def plot_hist2d(X_true, X_pred=None):
                 fig.delaxes(ax[i][j])
 
     for i in range(n_dim):
-        data = pd.DataFrame(np.array([X_true[:, i], X_pred[:, i]]).T, columns=['X_true', 'X_pred']) if X_pred is not None else X_true
+        data = pd.DataFrame(np.array([X_true[:, i], X_pred[:, i]]).T, columns=['X_true', 'X_pred']) if X_pred is not None else X_true[:, i]
         sns.kdeplot(data=data, ax=ax[i][i])
         if ad_ind is not None:
             ax[i][i].set_title(f"AD = {ad_ind[i]:.4f}")
@@ -79,7 +87,26 @@ def plot_hist2d(X_true, X_pred=None):
     return fig
 
 
+def log_test_metrics(X_true, X_pred):
+    """Logs Kendall absolute error and Anderson-Darling distances in MLFlow.
+    Note that this function should be run in the MLFlow context."""
+    n_dim = X_true.shape[1]
+
+    kendall = kendall_absolute_error(X_true, X_pred)
+    ad_ind, ad_mean = anderson_darling(X_true, X_pred)
+
+    mlflow.log_metric('test_kendall', kendall)
+    mlflow.log_metric('test_ad_mean', ad_mean)
+
+    for i in range(n_dim):
+        mlflow.log_metric(f'test_ad_{i + 1}', ad_ind[i])
+
+    return kendall, ad_mean
+
+
 def log_hist2d(label, X_true, X_pred=None):
+    """Log 2d-histograms in MLFlow.
+    """
     fig = plot_hist2d(X_true, X_pred)
     fig.canvas.draw()
     image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
