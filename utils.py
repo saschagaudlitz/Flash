@@ -17,15 +17,19 @@ def calculate_ri(X):
 
 
 def kendall_absolute_error(X_true, X_pred):
+    """Kendall absolute error metric
+    """
     return np.abs(calculate_ri(X_true) - calculate_ri(X_pred)).mean()
 
 
 def anderson_darling(X_true, X_pred):
+    """Anderson darling metric
+    """
     assert X_true.shape == X_pred.shape
     n_test = X_true.shape[0]
 
-    X_true_sorted = np.sort(X_true, axis=0)
-    u = ((X_pred[:, None] <= X_true_sorted[None, :]).sum(axis=1) + 1) / (n_test + 2)
+    X_pred_sorted = np.sort(X_pred, axis=0)
+    u = ((X_true[:, None] <= X_pred_sorted[None, :]).sum(axis=1) + 1) / (n_test + 2)
 
     ad_ind = -n_test - np.sum((2 * np.arange(1, n_test + 1) - 1).reshape(-1, 1) * (np.log(u) + np.log(1 - u[::-1])), axis=0) / n_test
     ad_mean = ad_ind.mean()
@@ -70,7 +74,8 @@ def plot_hist2d(X_true, X_pred=None):
 
 def log_test_metrics(X_true, X_pred):
     """Logs Kendall absolute error and Anderson-Darling distances in MLFlow.
-    Note that this function should be run in the MLFlow context."""
+    Note that this function should be run in the MLFlow context.
+    """
     n_dim = X_true.shape[1]
 
     kendall = kendall_absolute_error(X_true, X_pred)
