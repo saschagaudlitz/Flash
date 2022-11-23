@@ -7,30 +7,6 @@ from PIL import Image
 
 COLS = ['s1', 's2', 's3', 's4', 's5', 's6']
 
-def main(cls, args):
-    """MAIN ROUTINE
-
-    Parameters
-    ----------
-    cls  : Name of the "Trainer" class
-    args : Arguments from the console  
-    """
-    np.random.seed(1337)
-
-    # Initiate the mlflow Tracking API
-    with mlflow.start_run() as run:
-
-        # Create a trainer object for the specified model
-        trainer = cls(args, run.info.run_id)
-        mlflow.log_params(args)
-
-        # some models like KDE might not require training
-        if 'n_epochs' in args:
-            trainer.train()
-
-        kendall, ad_mean = trainer.test_step()
-        print(f"Test Kendall: {kendall:10.4f}")
-        print(f"Test AD:      {ad_mean:10.2f}")
 
 def calculate_ri(X):
     """Calculate order statistics for R_{i,n_test}.
@@ -39,10 +15,12 @@ def calculate_ri(X):
     # we can ignore j = i, since it's zero anyway
     return np.sort((X[:, None, :] < X[None, :, :]).prod(axis=2).sum(axis=1) / (n_test - 1))
 
+
 def kendall_absolute_error(X_true, X_pred):
     """Kendall absolute error metric
     """
     return np.abs(calculate_ri(X_true) - calculate_ri(X_pred)).mean()
+
 
 def anderson_darling(X_true, X_pred):
     """Anderson darling metric
@@ -57,6 +35,7 @@ def anderson_darling(X_true, X_pred):
     ad_mean = ad_ind.mean()
 
     return ad_ind, ad_mean
+
 
 def plot_hist2d(X_true, X_pred=None):
     """Plot 2d histogram of the data.

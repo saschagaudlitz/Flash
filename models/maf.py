@@ -3,33 +3,48 @@ from nflows.transforms import MaskedAffineAutoregressiveTransform, CompositeTran
 from nflows.transforms.permutations import ReversePermutation
 from nflows.distributions import StandardNormal
 from nflows.flows import Flow
-from trainer import Trainer
-from utils import main
+from models.trainer import Trainer
+
 
 class MAF(Trainer):
     """
     MAF trainer class - Implements Trainer for Normalizing flows
-    
+
     ...
 
     Attributes
     ----------
-    Attributes Trainer 
-    -> (args, run_id, X_train, X_val, X_test, model, optimizer, ri_true, best_kendall, best_ad_mean ) 
+    Attributes Trainer
+    -> (args, run_id, X_train, X_val, X_test, model, optimizer, ri_true, best_kendall, best_ad_mean )
 
-    
+
     Methods
     -------
-    -> 
+    ->
     configure_model : REQUIRED method for model configuration
     sample          : REQUIRED method for sampling from the model
     training_step   : REQUIRED implementing the training step
 
     """
+    @staticmethod
+    def get_parser():
+        """Create argument parser in order to allowing user-friendly command-line interface
+        """
+        parser = argparse.ArgumentParser()
+        # Add arguments with default values and types to the parser
+        parser.add_argument('--n_layers', type=int, default=10)
+        parser.add_argument('--n_epochs', type=int, default=10)
+        parser.add_argument('--n_dim', type=int, default=6)
+        parser.add_argument('--n_hidden_features', type=int, default=32)
+        parser.add_argument('--batch_size', type=int, default=32)
+        parser.add_argument('--lr', type=float, default=1e-3)
+        return parser
+
     def configure_model(self):
         """Create and return a Normalizing flow model
         """
         transforms = []
+
         for _ in range(self.args['n_layers']):
             transforms.append(ReversePermutation(features=self.args['n_dim']))
             transforms.append(MaskedAffineAutoregressiveTransform(features=self.args['n_dim'], hidden_features=self.args['n_hidden_features']))
@@ -54,20 +69,3 @@ class MAF(Trainer):
         """
         return model.sample(n_samples).detach().numpy()
 
-if __name__ == '__main__':
-    """
-    Create argument parser in order to allowing user-friendly command-line interface
-    """
-    parser = argparse.ArgumentParser()
-    # Add arguments with default values and types to the parser 
-    parser.add_argument('--n_layers', type=int, default=10)
-    parser.add_argument('--n_epochs', type=int, default=10)
-    parser.add_argument('--n_dim', type=int, default=6)
-    parser.add_argument('--n_hidden_features', type=int, default=32)
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--lr', type=float, default=1e-3)
-
-    # Convert to: {'n_layers': 10, 'n_epochs': 10, 'n_dim': 6, 'n_hidden_features': 32, 'batch_size': 32, 'lr': 0.001}
-    args = vars(parser.parse_args())
-    # Call main routine from utils and pass args and the "class name"
-    main(MAF, args)

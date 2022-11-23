@@ -1,10 +1,6 @@
 import argparse
-import mlflow
-import numpy as np
 from scipy.stats import gaussian_kde
-
 from models.trainer import Trainer
-from utils import main
 
 
 class KDE(Trainer):
@@ -27,6 +23,13 @@ class KDE(Trainer):
     training_step   : REQUIRED implementing the training step
     """
 
+    @staticmethod
+    def get_parser():
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--n_dim', type=int, default=6)
+        parser.add_argument('--bw_method', type=str, default='silverman')
+        return parser
+
     def configure_model(self):
         return gaussian_kde(self.X_train.T, bw_method=self.args['bw_method'])
 
@@ -36,12 +39,3 @@ class KDE(Trainer):
     def load_best_model(self):
         # since there is no training, the original model is the best model
         return self.model
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--n_dim', type=int, default=6)
-    parser.add_argument('--bw_method', type=str, default='silverman')
-
-    args = vars(parser.parse_args())
-    main(KDE, args)
