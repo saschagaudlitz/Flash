@@ -33,6 +33,3 @@ def generative_model(noise):
     parameters = np.load(os.path.join("parameters", "example_params.npy"))
 
     return np.maximum(0, latent_variable @ parameters)
-
-
-

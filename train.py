@@ -16,8 +16,10 @@ if __name__ == '__main__':
 
     np.random.seed(1337)
 
+    # Initiate the mlflow Tracking API
     with mlflow.start_run() as run:
 
+        # Create a trainer object for the specified model
         trainer = model(args, run.info.run_id)
         mlflow.log_params(args)
 
