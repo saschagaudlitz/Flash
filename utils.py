@@ -50,8 +50,8 @@ def anderson_darling(X_true, X_pred):
     assert X_true.shape == X_pred.shape
     n_test = X_true.shape[0]
 
-    X_true_sorted = np.sort(X_true, axis=0)
-    u = ((X_pred[:, None] <= X_true_sorted[None, :]).sum(axis=1) + 1) / (n_test + 2)
+    X_pred_sorted = np.sort(X_pred, axis=0)
+    u = ((X_true[:, None] <= X_pred_sorted[None, :]).sum(axis=1) + 1) / (n_test + 2)
 
     ad_ind = -n_test - np.sum((2 * np.arange(1, n_test + 1) - 1).reshape(-1, 1) * (np.log(u) + np.log(1 - u[::-1])), axis=0) / n_test
     ad_mean = ad_ind.mean()
