@@ -7,14 +7,20 @@ from PIL import Image
 
 COLS = ['s1', 's2', 's3', 's4', 's5', 's6']
 
-
 def main(cls, args):
-    """Main routine.
+    """MAIN ROUTINE
+
+    Parameters
+    ----------
+    cls  : Name of the "Trainer" class
+    args : Arguments from the console  
     """
     np.random.seed(1337)
 
+    # Initiate the mlflow Tracking API
     with mlflow.start_run() as run:
 
+        # Create a trainer object for the specified model
         trainer = cls(args, run.info.run_id)
         mlflow.log_params(args)
 
@@ -26,7 +32,6 @@ def main(cls, args):
         print(f"Test Kendall: {kendall:10.4f}")
         print(f"Test AD:      {ad_mean:10.2f}")
 
-
 def calculate_ri(X):
     """Calculate order statistics for R_{i,n_test}.
     """
@@ -34,12 +39,14 @@ def calculate_ri(X):
     # we can ignore j = i, since it's zero anyway
     return np.sort((X[:, None, :] < X[None, :, :]).prod(axis=2).sum(axis=1) / (n_test - 1))
 
-
 def kendall_absolute_error(X_true, X_pred):
+    """Kendall absolute error metric
+    """
     return np.abs(calculate_ri(X_true) - calculate_ri(X_pred)).mean()
 
-
 def anderson_darling(X_true, X_pred):
+    """Anderson darling metric
+    """
     assert X_true.shape == X_pred.shape
     n_test = X_true.shape[0]
 
@@ -50,7 +57,6 @@ def anderson_darling(X_true, X_pred):
     ad_mean = ad_ind.mean()
 
     return ad_ind, ad_mean
-
 
 def plot_hist2d(X_true, X_pred=None):
     """Plot 2d histogram of the data.
@@ -89,7 +95,8 @@ def plot_hist2d(X_true, X_pred=None):
 
 def log_test_metrics(X_true, X_pred):
     """Logs Kendall absolute error and Anderson-Darling distances in MLFlow.
-    Note that this function should be run in the MLFlow context."""
+    Note that this function should be run in the MLFlow context.
+    """
     n_dim = X_true.shape[1]
 
     kendall = kendall_absolute_error(X_true, X_pred)

@@ -10,11 +10,41 @@ import pandas as pd
 
 from utils import calculate_ri, anderson_darling, COLS, log_test_metrics, log_hist2d
 
-
 class Trainer:
+    """
+    Base trainer class providing abstraction for the essential elements of training a model
 
+    ...
+
+    Attributes
+    ----------
+    args         : arguments from command-line interface
+    run_id       : unique id for each run
+    X_train      : training set
+    X_val        : valdiation set
+    X_test       : test set
+    model        : model to be trained
+    opitimizer   : optimizer used to train the model
+    ri_true      : Anderson-Darling ri for valdation set
+    best_kendall : best value for kendall
+    best_ad_mean : best value for anderson darling
+
+    
+    Methods
+    -------
+    __init__            : constructur gathering the attributes 
+    configure_model     : DEMAND method for model configuration
+    training_step       : DEMAND method specifiying the training step
+    sample              : DEMAND method for sampling from the model
+    train               : training loop applied to the model
+    configure_dataset   : Read split and modify the dataset 
+    configure_optimizer : If the model has parameters optimize over them using Adam
+    validation_step     : Record validation metrics and save the best model
+    load_best_model     : load the best model found
+    test_step           : Gather value of metric's  on the test set
+
+    """
     def __init__(self, args, run_id):
-
         self.args = args
         self.run_id = run_id
 
