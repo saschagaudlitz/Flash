@@ -55,7 +55,7 @@ You can run a model from the root directory of the project by specifying the nam
 
     python3 train.py MAF --n_epochs=10 --batch_size=32 --n_hidden_features=32
 
-## From the notebook
+## From notebook
 
 You can also run the model from the notebook, see `train.ipynb` for the example. In the notebook you can observe 2d-marginals graphically during training. For this, you need to subclass your model and implement `on_train_epoch_end` hook:
 

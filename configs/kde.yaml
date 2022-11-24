@@ -1,0 +1,13 @@
+model_params:
+  name: KDE
+  bw_method: scott
+  n_dim: 6
+
+experiment_params:
+  manual_seed: 1337
+
+data_params:
+  batch_size: 100000
+
+trainer_params:
+  max_epochs: 0

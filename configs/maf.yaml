@@ -1,0 +1,15 @@
+model_params:
+  name: MAF
+  n_layers: 10
+  n_dim: 6
+  n_hidden_features: 32
+
+experiment_params:
+  learning_rate: 0.001
+  manual_seed: 1337
+
+data_params:
+  batch_size: 32
+
+trainer_params:
+  max_epochs: 100
