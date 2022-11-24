@@ -16,7 +16,7 @@ space = {
 
 def objective(args):
 
-    config = get_config('configs/cdf.yaml')
+    config = get_config('configs/KDE.yaml')
 
     for key, value in args.items():
         first, second = key.split('.')
@@ -46,7 +46,7 @@ https://www.kaggle.com/code/ilialar/hyperparameters-tunning-with-hyperopt/notebo
 """
 if __name__ == '__main__':
 
-    mlflow.set_experiment('Tuning CDF')
+    mlflow.set_experiment('Tuning MAF n_epochs Kendall')
 
     # minimize the objective over the space
     best = fmin(objective, space, algo=tpe.suggest, max_evals=50)

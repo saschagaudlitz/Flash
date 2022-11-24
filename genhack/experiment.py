@@ -61,7 +61,7 @@ class Experiment(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
 
-        best_model = mlflow.pytorch.load_model(self.best_ad_mean_model_uri)
+        best_model = mlflow.pytorch.load_model(self.best_kendall_model_uri)
 
         X_test = batch[0]
         X_test_pred = best_model.sample(X_test.shape[0])
