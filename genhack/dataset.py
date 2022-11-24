@@ -10,12 +10,13 @@ from genhack.utils import COLS
 
 class StationsDataset(LightningDataModule):
 
-    def __init__(self, batch_size, *args, **kwargs):
+    def __init__(self, batch_size, val_split_size=0.2, *args, **kwargs):
         super().__init__()
         self.batch_size = batch_size
+        self.val_split_size = val_split_size
 
         X = pd.read_csv('data/df_train.csv')[COLS].to_numpy()
-        X_train, X_val = train_test_split(X, test_size=0.2)
+        X_train, X_val = train_test_split(X, test_size=val_split_size)
         X_test = pd.read_csv('data/df_test.csv')[COLS].to_numpy()
 
         self.train_dataset = TensorDataset(torch.tensor(X_train.astype(np.float32)))

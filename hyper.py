@@ -10,13 +10,13 @@ from genhack.models import models
 from genhack.utils import get_config
 
 space = {
-    'model_params.bw_method': hp.choice('bw_method', np.arange(0.1, 1.1, 0.1)),
+    'data_params.val_split_size': hp.choice('bw_method', np.arange(0.01, 0.51, 0.01)),
 }
 
 
 def objective(args):
 
-    config = get_config()
+    config = get_config('configs/cdf.yaml')
 
     for key, value in args.items():
         first, second = key.split('.')
@@ -40,13 +40,16 @@ def objective(args):
 
     return float(result['test_ad_mean'])
 
-
+"""
+Check in detail, perhaps try simulated annealing:
+https://www.kaggle.com/code/ilialar/hyperparameters-tunning-with-hyperopt/notebook
+"""
 if __name__ == '__main__':
 
-    mlflow.set_experiment('Tuning')
+    mlflow.set_experiment('Tuning CDF')
 
     # minimize the objective over the space
-    best = fmin(objective, space, algo=tpe.suggest, max_evals=10)
+    best = fmin(objective, space, algo=tpe.suggest, max_evals=50)
 
     print(best)
     print(space_eval(space, best))

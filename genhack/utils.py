@@ -11,12 +11,9 @@ from PIL import Image
 COLS = ['s1', 's2', 's3', 's4', 's5', 's6']
 
 
-def get_config():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--config', '-c', dest="filename", metavar='FILE')
+def get_config(filename):
 
-    args = parser.parse_args()
-    with open(args.filename, 'r') as file:
+    with open(filename, 'r') as file:
         try:
             config = yaml.safe_load(file)
         except yaml.YAMLError as exc:
