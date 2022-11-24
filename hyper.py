@@ -1,36 +1,52 @@
 import mlflow
 import numpy as np
 from hyperopt import hp, fmin, tpe, space_eval
+from pytorch_lightning import Trainer
+from pytorch_lightning.utilities.seed import seed_everything
 
-from models.maf import MAF
+from genhack.dataset import StationsDataset
+from genhack.experiment import Experiment
+from genhack.models import models
+from genhack.utils import get_config
 
 space = {
-    'n_layers': hp.choice('n_layers', [5, 10, 20]),
-    'n_epochs': hp.choice('n_epochs', [1]),
-    'n_dim': hp.choice('n_dim', [6]),
-    'n_hidden_features': hp.choice('n_hidden_features', [8, 16, 32, 64]),
-    'batch_size': hp.choice('batch_size', [32, 128]),
-    'lr': hp.choice('lr', [1e-3]),
+    'model_params.bw_method': hp.choice('bw_method', np.arange(0.1, 1.1, 0.1)),
 }
 
 
 def objective(args):
-    with mlflow.start_run() as run:
-        trainer = MAF(args, run.info.run_id)
-        mlflow.log_params(args)
-        trainer.train()
-        kendall, ad_mean = trainer.test_step()
 
-    return kendall
+    config = get_config()
+
+    for key, value in args.items():
+        first, second = key.split('.')
+        config[first][second] = value
+
+    seed_everything(config['experiment_params']['manual_seed'], True)
+
+    datamodule = StationsDataset(**config['data_params'])
+    model = models[config['model_params']['name']](**config['model_params'], datamodule=datamodule)
+    experiment = Experiment(model, config.get('experiment_params', None))
+    trainer = Trainer(**config['trainer_params'])
+
+    mlflow.pytorch.autolog(log_models=False)
+
+    with mlflow.start_run() as run:
+        for name in 'model_params', 'experiment_params', 'data_params', 'trainer_params':
+            if name in config:
+                mlflow.log_params(config[name])
+        trainer.fit(experiment, datamodule=datamodule)
+        result = experiment.test_step(datamodule.test_dataset[:], 0)
+
+    return float(result['test_ad_mean'])
 
 
 if __name__ == '__main__':
 
-    np.random.seed(1337)
     mlflow.set_experiment('Tuning')
 
     # minimize the objective over the space
-    best = fmin(objective, space, algo=tpe.suggest, max_evals=100)
+    best = fmin(objective, space, algo=tpe.suggest, max_evals=10)
 
     print(best)
     print(space_eval(space, best))

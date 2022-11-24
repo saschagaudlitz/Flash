@@ -1,6 +1,6 @@
 model_params:
   name: KDE
-  bw_method: scott
+  bw_method: 0.1
   n_dim: 6
 
 experiment_params:

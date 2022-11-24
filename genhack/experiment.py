@@ -24,7 +24,7 @@ class Experiment(pl.LightningModule):
             return optim.Adam(self.model.parameters(), lr=self.params['learning_rate'])
 
     def training_step(self, batch, batch_idx):
-        result = self.model(batch)
+        result = self.model(batch[0])
         loss = self.model.loss(*result)
         self.log_dict({key: val.item() for key, val in loss.items()})
         return loss['loss']
@@ -61,7 +61,7 @@ class Experiment(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
 
-        best_model = mlflow.pytorch.load_model(self.best_kendall_model_uri)
+        best_model = mlflow.pytorch.load_model(self.best_ad_mean_model_uri)
 
         X_test = batch[0]
         X_test_pred = best_model.sample(X_test.shape[0])

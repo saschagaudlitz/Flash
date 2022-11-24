@@ -10,7 +10,7 @@ from genhack.utils import COLS
 
 class StationsDataset(LightningDataModule):
 
-    def __init__(self, batch_size):
+    def __init__(self, batch_size, *args, **kwargs):
         super().__init__()
         self.batch_size = batch_size
 

@@ -7,18 +7,25 @@ from torch import nn
 
 class MAF(nn.Module):
 
-    def __init__(self, n_layers, n_dim, n_hidden_features, *args, **kwargs):
+    def __init__(self, n_layers, n_dim, n_hidden_features, dropout_probability=0.0, use_batch_norm=False, *args, **kwargs):
         super().__init__()
 
         self.n_layers = n_layers
         self.n_dim = n_dim
         self.n_hidden_features = n_hidden_features
+        self.use_batch_norm = use_batch_norm
+        self.dropout_probability = dropout_probability
 
         transforms = []
 
         for _ in range(self.n_layers):
             transforms.append(ReversePermutation(features=self.n_dim))
-            transforms.append(MaskedAffineAutoregressiveTransform(features=self.n_dim, hidden_features=self.n_hidden_features))
+            transforms.append(MaskedAffineAutoregressiveTransform(
+                features=self.n_dim,
+                hidden_features=self.n_hidden_features,
+                use_batch_norm=self.use_batch_norm,
+                dropout_probability=self.dropout_probability,
+            ))
         transform = CompositeTransform(transforms)
 
         # Define a base distribution.
@@ -28,10 +35,11 @@ class MAF(nn.Module):
         self.flow = Flow(transform=transform, distribution=base_distribution)
 
     def forward(self, input):
-        return input
+        return [input]
 
     def sample(self, n_samples):
         return self.flow.sample(n_samples)
 
-    def loss(self, input):
+    def loss(self, *args, **kwargs):
+        input = args[0]
         return {'loss': -self.flow.log_prob(inputs=input).mean()}
