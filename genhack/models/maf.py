@@ -1,8 +1,35 @@
-from nflows.transforms import MaskedAffineAutoregressiveTransform, CompositeTransform
-from nflows.transforms.permutations import ReversePermutation
+import torch
+from nflows.nn import nets
+from nflows.transforms import MaskedAffineAutoregressiveTransform, CompositeTransform, AffineCouplingTransform
+from nflows.transforms.permutations import ReversePermutation, RandomPermutation
 from nflows.distributions import StandardNormal
 from nflows.flows import Flow
 from torch import nn
+from torch.nn import functional as F
+
+
+class MyFlow(Flow):
+
+    def sample_from_noise(self, noise):
+        return self._transform.inverse(noise)
+
+
+class MyMaskedAffineAutoregressiveTransform(MaskedAffineAutoregressiveTransform):
+
+    def __init__(
+            self,
+            features,
+            hidden_features,
+            context_features=None,
+            num_blocks=2,
+            use_residual_blocks=True,
+            random_mask=False,
+            activation=F.relu,
+            dropout_probability=0.0,
+            use_batch_norm=False,
+    ):
+        super().__init__(features, hidden_features, context_features, num_blocks, use_residual_blocks, random_mask, activation, dropout_probability, use_batch_norm)
+        self._epsilon = 1e-1
 
 
 class MAF(nn.Module):
@@ -18,6 +45,13 @@ class MAF(nn.Module):
 
         transforms = []
 
+        # # coupling instead of AR
+        # for _ in range(self.n_layers):
+        #     def create_net(in_features, out_features):
+        #         return nets.ResidualNet(in_features, out_features, hidden_features=30, num_blocks=5)
+        #     transforms.append(RandomPermutation(features=self.n_dim))
+        #     transforms.append(AffineCouplingTransform(mask=torch.Tensor([1., 1., 1., 0., 0., 0.]), transform_net_create_fn=create_net))
+
         for _ in range(self.n_layers):
             transforms.append(ReversePermutation(features=self.n_dim))
             transforms.append(MaskedAffineAutoregressiveTransform(
@@ -26,13 +60,14 @@ class MAF(nn.Module):
                 use_batch_norm=self.use_batch_norm,
                 dropout_probability=self.dropout_probability,
             ))
+
         transform = CompositeTransform(transforms)
 
         # Define a base distribution.
         base_distribution = StandardNormal(shape=[self.n_dim])
 
         # Combine into a flow. (For normalizing flows, see arXiv:1912.02762)
-        self.flow = Flow(transform=transform, distribution=base_distribution)
+        self.flow = MyFlow(transform=transform, distribution=base_distribution)
 
     def forward(self, input):
         return [input]

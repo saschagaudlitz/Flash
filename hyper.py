@@ -1,13 +1,8 @@
 import mlflow
 import numpy as np
 from hyperopt import hp, fmin, tpe, space_eval
-from pytorch_lightning import Trainer
-from pytorch_lightning.utilities.seed import seed_everything
-
-from genhack.dataset import StationsDataset
-from genhack.experiment import Experiment
-from genhack.models import models
 from genhack.utils import get_config
+from train import train
 
 space = {
     'data_params.val_split_size': hp.choice('bw_method', np.arange(0.01, 0.51, 0.01)),
@@ -22,23 +17,9 @@ def objective(args):
         first, second = key.split('.')
         config[first][second] = value
 
-    seed_everything(config['experiment_params']['manual_seed'], True)
-
-    datamodule = StationsDataset(**config['data_params'])
-    model = models[config['model_params']['name']](**config['model_params'], datamodule=datamodule)
-    experiment = Experiment(model, config.get('experiment_params', None))
-    trainer = Trainer(**config['trainer_params'])
-
-    mlflow.pytorch.autolog(log_models=False)
-
-    with mlflow.start_run() as run:
-        for name in 'model_params', 'experiment_params', 'data_params', 'trainer_params':
-            if name in config:
-                mlflow.log_params(config[name])
-        trainer.fit(experiment, datamodule=datamodule)
-        result = experiment.test_step(datamodule.test_dataset[:], 0)
-
+    result = train(config)
     return float(result['test_ad_mean'])
+
 
 """
 Check in detail, perhaps try simulated annealing:

@@ -4,6 +4,7 @@ import mlflow.pytorch
 import numpy as np
 from torch import optim
 import pytorch_lightning as pl
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from genhack.utils import calculate_ri, anderson_darling, log_test_metrics, log_hist2d
 
@@ -21,7 +22,9 @@ class Experiment(pl.LightningModule):
 
     def configure_optimizers(self):
         if len(list(self.model.parameters())) > 0:
-            return optim.Adam(self.model.parameters(), lr=self.params['learning_rate'])
+            adam = optim.Adam(self.model.parameters(), lr=self.params['learning_rate'])
+            scheduler = ReduceLROnPlateau(adam, mode='min', factor=0.1)
+            return [adam], [scheduler]
 
     def training_step(self, batch, batch_idx):
         result = self.model(batch[0])
@@ -32,6 +35,8 @@ class Experiment(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
 
         X_val = batch[0]
+
+        # print(self.model.flow.transform_to_noise(X_val))
 
         # calculate Kendall ri for the validation set only once, because this operation takes a couple of seconds
         if self.ri_true is None:
@@ -61,7 +66,7 @@ class Experiment(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
 
-        best_model = mlflow.pytorch.load_model(self.best_kendall_model_uri)
+        best_model = mlflow.pytorch.load_model(self.best_ad_mean_model_uri)
 
         X_test = batch[0]
         X_test_pred = best_model.sample(X_test.shape[0])

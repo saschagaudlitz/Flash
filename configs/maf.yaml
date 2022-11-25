@@ -3,6 +3,9 @@ model_params:
   n_layers: 10
   n_dim: 6
   n_hidden_features: 32
+  n_blocks: 5
+  dropout_probability: 0.0
+  use_batch_norm: true
 
 experiment_params:
   learning_rate: 0.001
