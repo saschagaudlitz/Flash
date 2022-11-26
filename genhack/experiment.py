@@ -1,11 +1,10 @@
 import math
 import mlflow.pytorch
-import numpy as np
 import torch
 from torch import optim
 import pytorch_lightning as pl
 
-from genhack.utils import calculate_ri, anderson_darling, log_test_metrics, log_hist2d
+from genhack.utils import calculate_ri, anderson_darling, log_test_metrics, log_hist2d, DEVICE
 
 
 class Experiment(pl.LightningModule):
@@ -40,12 +39,12 @@ class Experiment(pl.LightningModule):
         if self.ri_true is None:
             self.ri_true = calculate_ri(X_val)
 
-        X_val_pred = self.model.sample(torch.randn((len(X_val), self.model.n_latent_dim)))
+        X_val_pred = self.model.sample(torch.randn((len(X_val), self.model.n_latent_dim), device=DEVICE))
         ad_ind, ad_mean = anderson_darling(X_val, X_val_pred)
 
         # calculate Kendall explicitly to avoid the evaluation of ri_true at the end of every epoch
         ri_pred = calculate_ri(X_val_pred)
-        kendall = np.abs(ri_pred - self.ri_true).mean()
+        kendall = torch.abs(ri_pred - self.ri_true).mean()
 
         self.log_dict({'val_kendall': kendall, 'val_ad_mean': ad_mean})
 
@@ -68,12 +67,12 @@ class Experiment(pl.LightningModule):
         log_hist2d('test_true', X_test)
 
         best_model = mlflow.pytorch.load_model(self.best_ad_mean_model_uri)
-        X_test_pred = best_model.sample(torch.randn((len(X_test), self.model.n_latent_dim)))
+        X_test_pred = best_model.sample(torch.randn((len(X_test), self.model.n_latent_dim), device=DEVICE))
         test_ba_kendall, test_ba_ad_mean = log_test_metrics(X_test, X_test_pred, 'ba')
         log_hist2d(f'test_ba_pred', X_test_pred, X_test)
 
         best_model = mlflow.pytorch.load_model(self.best_kendall_model_uri)
-        X_test_pred = best_model.sample(torch.randn((len(X_test), self.model.n_latent_dim)))
+        X_test_pred = best_model.sample(torch.randn((len(X_test), self.model.n_latent_dim), device=DEVICE))
         test_bk_kendall, test_bk_ad_mean = log_test_metrics(X_test, X_test_pred, 'bk')
         log_hist2d(f'test_bk_pred', X_test_pred, X_test)
 

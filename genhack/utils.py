@@ -1,5 +1,4 @@
 import argparse
-
 import mlflow
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -8,7 +7,9 @@ import torch
 import yaml
 from PIL import Image
 
+
 COLS = ['s1', 's2', 's3', 's4', 's5', 's6']
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def get_config(filename):
@@ -45,7 +46,7 @@ def anderson_darling(X_true, X_pred):
     X_pred_sorted = torch.sort(X_pred, dim=0).values
     u = (torch.sum(X_true[None, :] <= X_pred_sorted[:, None], dim=1) + 1) / (n_test + 2)
 
-    ad_ind = -n_test - torch.sum((2 * torch.arange(1, n_test + 1) - 1).reshape(-1, 1) * (torch.log(u) + torch.log(1 - torch.flip(u, dims=(0,)))), dim=0) / n_test
+    ad_ind = -n_test - torch.sum((2 * torch.arange(1, n_test + 1, device=DEVICE) - 1).reshape(-1, 1) * (torch.log(u) + torch.log(1 - torch.flip(u, dims=(0,)))), dim=0) / n_test
     ad_mean = ad_ind.mean()
 
     return ad_ind, ad_mean

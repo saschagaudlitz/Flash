@@ -6,7 +6,12 @@ import numpy as np
 from torch.utils.data import TensorDataset, DataLoader
 import os
 from genhack.utils import COLS
+from torch.utils.data.dataloader import default_collate
 
+
+# https://stackoverflow.com/questions/65932328/pytorch-while-loading-batched-data-using-dataloader-how-to-transfer-the-data-t
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+collate_fn = lambda x: tuple(x_.to(device) for x_ in default_collate(x))
 
 class StationsDataset(LightningDataModule):
 
@@ -27,10 +32,10 @@ class StationsDataset(LightningDataModule):
         self.test_dataset = TensorDataset(torch.tensor(X_test.astype(np.float32)))
 
     def train_dataloader(self):
-        return DataLoader(dataset=self.train_dataset, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(dataset=self.train_dataset, collate_fn=collate_fn, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(dataset=self.val_dataset, batch_size=100000)
+        return DataLoader(dataset=self.val_dataset, collate_fn=collate_fn, batch_size=100000)
 
     def test_dataloader(self):
-        return DataLoader(dataset=self.test_dataset, batch_size=100000)
+        return DataLoader(dataset=self.test_dataset, collate_fn=collate_fn, batch_size=100000)
