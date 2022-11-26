@@ -6,7 +6,23 @@ genhack@polytechnique.fr
 
 # Workflow
 
-## MLFlow
+## Model development
+
+> See `models/maf.py` for a working example.
+
+You need to subclass torch's `nn.Module` and implement `forward`, `sample` and `loss` methods.
+
+In the end, import contents of your module in the `models/__init__.py` file and add your model to the `models` dictionary, for example:
+
+    from .maf import *
+    ...
+    
+    models = {
+        ...
+        'MAF': MAF,
+    }
+
+# MLFlow
 
 We use MLFlow for model tracking.
 
@@ -20,52 +36,22 @@ Then you can access the server under `127.0.0.1:5000`.
 
 Note that in `mlflow` you can run an *experiment* that has several *runs*. For example, for hyperparameter tuning or cross-validation, you would run one experiment with multiple runs.
 
-## Model development
-
-> See `models/maf.py` for a working example.
-
-To create a new model, subclass `Trainer` and implement the following methods:
-
-    # specify model hyperparameters, with argparse
-    def get_parser()
-
-    # model definition
-    def configure_model(self)
-
-    # model training step
-    def training_step(self, batch, batch_idx)
-
-    # sampling from the model
-    def sample(self, n_samples)
-
-Trainer exposes the following attributes:
-
-    self.model, self.optimizer
-    self.X_train, self.X_val, self.X_test
-
-In the end, import contents of your module in the `models/__init__.py` file, for example:
-
-    from .diffusion import *
-
 # Running models
 
 ## From command line
 
-You can run a model from the root directory of the project by specifying the name of the class and passing arguments as follows:
+You can run a model from the root directory of the project by specifying the name of the class and the config argument as follows:
 
-    python3 train.py MAF --n_epochs=10 --batch_size=32 --n_hidden_features=32
+    python3 train.py --config=configs/vae.yaml
 
 ## From notebook
 
-You can also run the model from the notebook, see `train.ipynb` for the example. In the notebook you can observe 2d-marginals graphically during training. For this, you need to subclass your model and implement `on_train_epoch_end` hook:
-
-    class MyMAF(MAF):
-        def on_train_epoch_end(self):
-            X_val_pred = self.sample(self.model, len(self.X_val))
-            fig = plot_hist2d(X_val_pred, self.X_val)
-            clear_output(wait=True)
-            plt.show()
+You can also run the model from the notebook, see `train.ipynb` for the example. In the notebook you can monitor 2d-marginals graphically during training.
 
 ## Hyperparameter tuning
 
-See `hyper.py` script.
+You need to install `hyperopt` and `ray` for hyperparameter tuning.
+
+    pip install hyperopt ray
+
+See `hypertune.py` for example script.

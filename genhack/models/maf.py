@@ -1,5 +1,3 @@
-import torch
-from nflows.nn import nets
 from nflows.transforms import MaskedAffineAutoregressiveTransform, CompositeTransform, AffineCouplingTransform
 from nflows.transforms.permutations import ReversePermutation, RandomPermutation
 from nflows.distributions import StandardNormal

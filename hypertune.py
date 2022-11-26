@@ -10,7 +10,7 @@ from train import train
 
 param_space = {
     'model_params.n_blocks': tune.choice([3, 5, 10]),
-    'model_params.n_layers': tune.choice([5, 7, 10, 15]),
+    'model_params.n_layers': tune.choice([5, 7, 10]),
     'model_params.n_hidden_features': tune.choice([8, 16, 32, 64]),
     'model_params.dropout_probability': tune.choice([0., 0.25, 0.5, 0.75]),
     'model_params.use_batch_norm': tune.choice([True, False]),
