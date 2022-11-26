@@ -7,7 +7,7 @@ from pytorch_lightning.utilities.seed import seed_everything
 from genhack.dataset import StationsDataset
 from genhack.models import models
 from genhack.experiment import Experiment
-from genhack.utils import get_config
+from genhack.utils import get_config, DEVICE
 
 
 def train(config, enable_progress_bar=True, callbacks=None):
@@ -31,7 +31,7 @@ def train(config, enable_progress_bar=True, callbacks=None):
         if name in config:
             mlflow.log_params(config[name])
     trainer.fit(experiment, datamodule=datamodule)
-    result = experiment.test_step(datamodule.test_dataset[:], 0)
+    result = experiment.test_step([datamodule.test_dataset[:][0].to(DEVICE)], 0)
 
     return result
 
