@@ -10,6 +10,9 @@
 # See below an example of a generative model
 # G_\theta(Z) = np.max(0, \theta.Z)
 ############################################################################
+import sys
+sys.path.append('/parameters')
+
 import mlflow
 import torch
 
@@ -27,7 +30,7 @@ def generative_model(noise):
     # See below an example
     # ---------------------
     latent_variable = torch.Tensor(noise[:, :6])
-    model = mlflow.pytorch.load_model('parameters/best_ad_mean')
+    model = mlflow.pytorch.load_model('parameters/best_model')
     samples = model.sample(latent_variable).detach().numpy()
 
     return samples
