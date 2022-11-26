@@ -23,8 +23,9 @@ class Experiment(pl.LightningModule):
     def configure_optimizers(self):
         if len(list(self.model.parameters())) > 0:
             adam = optim.Adam(self.model.parameters(), lr=self.params['learning_rate'])
-            scheduler = ReduceLROnPlateau(adam, mode='min', factor=0.1)
-            return [adam], [scheduler]
+            return adam
+            # scheduler = ReduceLROnPlateau(adam, mode='min', factor=0.1)
+            # return [adam], [scheduler]
 
     def training_step(self, batch, batch_idx):
         result = self.model(batch[0])

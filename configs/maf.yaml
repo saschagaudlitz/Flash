@@ -8,7 +8,7 @@ model_params:
   use_batch_norm: true
 
 experiment_params:
-  learning_rate: 0.001
+  learning_rate: 0.0001
   manual_seed: 1337
 
 data_params:
