@@ -10,12 +10,15 @@ from genhack.experiment import Experiment
 from genhack.utils import get_config
 
 
-def train(config, enable_progress_bar=True):
-    seed_everything(config['experiment_params']['manual_seed'], True)
+def train(config, enable_progress_bar=True, callbacks=None):
+
+    if callbacks is None:
+        callbacks = []
 
     # early_stopping = EarlyStopping(monitor='val_kendall', patience=10)
-    # callbacks = [early_stopping]
-    callbacks = []
+    # callbacks += [early_stopping]
+
+    seed_everything(config['experiment_params']['manual_seed'], True)
 
     datamodule = StationsDataset(**config['data_params'])
     model = models[config['model_params']['name']](**config['model_params'], datamodule=datamodule)

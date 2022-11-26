@@ -86,7 +86,7 @@ def plot_hist2d(X, X_true=None):
     return fig
 
 
-def log_test_metrics(X_true, X_pred):
+def log_test_metrics(X_true, X_pred, prefix):
     """Logs Kendall absolute error and Anderson-Darling distances in MLFlow.
     Note that this function should be run in the MLFlow context.
     """
@@ -95,11 +95,11 @@ def log_test_metrics(X_true, X_pred):
     kendall = kendall_absolute_error(X_true, X_pred)
     ad_ind, ad_mean = anderson_darling(X_true, X_pred)
 
-    mlflow.log_metric('test_kendall', kendall)
-    mlflow.log_metric('test_ad_mean', ad_mean)
+    mlflow.log_metric(f'test_{prefix}_kendall', kendall)
+    mlflow.log_metric(f'test_{prefix}_ad_mean', ad_mean)
 
     for i in range(n_dim):
-        mlflow.log_metric(f'test_ad_{i + 1}', ad_ind[i])
+        mlflow.log_metric(f'test_{prefix}_ad_{i + 1}', ad_ind[i])
 
     return kendall, ad_mean
 

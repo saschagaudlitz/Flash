@@ -5,11 +5,11 @@ import torch
 
 class VAE(nn.Module):
 
-    def __init__(self, n_dim, n_hidden_dims, n_latent_dim, kld_weight, *args, **kwargs):
+    def __init__(self, n_dim, n_latent_dim, n_hidden_dims, kld_weight, *args, **kwargs):
         super().__init__()
         self.n_dim = n_dim
-        self.n_hidden_dims = n_hidden_dims
         self.n_latent_dim = n_latent_dim
+        self.n_hidden_dims = n_hidden_dims
         self.kld_weight = kld_weight
 
         # build encoder
@@ -73,6 +73,5 @@ class VAE(nn.Module):
         loss = reconstruction_loss + self.kld_weight + kld_loss
         return {'loss': loss, 'reconstruction_loss': reconstruction_loss, 'kld_loss': kld_loss}
 
-    def sample(self, n_samples):
-        z = torch.randn(n_samples, self.n_latent_dim)
-        return self.decode(z)
+    def sample(self, noise):
+        return self.decode(noise)

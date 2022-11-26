@@ -1,10 +1,9 @@
 import math
-
 import mlflow.pytorch
 import numpy as np
+import torch
 from torch import optim
 import pytorch_lightning as pl
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from genhack.utils import calculate_ri, anderson_darling, log_test_metrics, log_hist2d
 
@@ -37,17 +36,15 @@ class Experiment(pl.LightningModule):
 
         X_val = batch[0]
 
-        # print(self.model.flow.transform_to_noise(X_val))
-
         # calculate Kendall ri for the validation set only once, because this operation takes a couple of seconds
         if self.ri_true is None:
             self.ri_true = calculate_ri(X_val)
 
-        X_pred = self.model.sample(X_val.shape[0])
-        ad_ind, ad_mean = anderson_darling(X_val, X_pred)
+        X_val_pred = self.model.sample(torch.randn((len(X_val), self.model.n_latent_dim)))
+        ad_ind, ad_mean = anderson_darling(X_val, X_val_pred)
 
         # calculate Kendall explicitly to avoid the evaluation of ri_true at the end of every epoch
-        ri_pred = calculate_ri(X_pred)
+        ri_pred = calculate_ri(X_val_pred)
         kendall = np.abs(ri_pred - self.ri_true).mean()
 
         self.log_dict({'val_kendall': kendall, 'val_ad_mean': ad_mean})
@@ -67,13 +64,22 @@ class Experiment(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
 
-        best_model = mlflow.pytorch.load_model(self.best_ad_mean_model_uri)
-
         X_test = batch[0]
-        X_test_pred = best_model.sample(X_test.shape[0])
-        kendall, ad_mean = log_test_metrics(X_test, X_test_pred)
-
         log_hist2d('test_true', X_test)
-        log_hist2d('test_pred', X_test_pred, X_test)
 
-        return {'test_kendall': kendall, 'test_ad_mean': ad_mean}
+        best_model = mlflow.pytorch.load_model(self.best_ad_mean_model_uri)
+        X_test_pred = best_model.sample(torch.randn((len(X_test), self.model.n_latent_dim)))
+        test_ba_kendall, test_ba_ad_mean = log_test_metrics(X_test, X_test_pred, 'ba')
+        log_hist2d(f'test_ba_pred', X_test_pred, X_test)
+
+        best_model = mlflow.pytorch.load_model(self.best_kendall_model_uri)
+        X_test_pred = best_model.sample(torch.randn((len(X_test), self.model.n_latent_dim)))
+        test_bk_kendall, test_bk_ad_mean = log_test_metrics(X_test, X_test_pred, 'bk')
+        log_hist2d(f'test_bk_pred', X_test_pred, X_test)
+
+        return {
+            f'test_ba_kendall': test_ba_kendall,
+            f'test_ba_mean': test_ba_ad_mean,
+            f'test_bk_kendall': test_bk_kendall,
+            f'test_bk_mean': test_bk_ad_mean,
+        }

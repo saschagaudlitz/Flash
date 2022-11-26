@@ -1,6 +1,7 @@
 model_params:
   name: CDF
   n_dim: 6
+  n_latent_dim: 6
 
 experiment_params:
   manual_seed: 1337

@@ -1,9 +1,10 @@
 model_params:
-  name: VAE
+  name: LDM
   n_dim: 6
   n_latent_dim: 6
-  n_hidden_dims: [6, 6, 6, 6, 6, 6]
-  kld_weight: 1
+  n_timesteps: 5
+  n_unet_dim: 8
+  n_resnet_block_groups: 1
 
 experiment_params:
   learning_rate: 0.001
@@ -11,6 +12,7 @@ experiment_params:
 
 data_params:
   batch_size: 32
+  val_split_size: 0.2
 
 trainer_params:
-  max_epochs: 50
+  max_epochs: 10

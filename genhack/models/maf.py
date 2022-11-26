@@ -6,37 +6,20 @@ from torch import nn
 from torch.nn import functional as F
 
 
-class MyFlow(Flow):
-
-    def sample_from_noise(self, noise):
-        return self._transform.inverse(noise)
-
-
 class MyMaskedAffineAutoregressiveTransform(MaskedAffineAutoregressiveTransform):
 
-    def __init__(
-            self,
-            features,
-            hidden_features,
-            context_features=None,
-            num_blocks=2,
-            use_residual_blocks=True,
-            random_mask=False,
-            activation=F.relu,
-            dropout_probability=0.0,
-            use_batch_norm=False,
-    ):
-        super().__init__(features, hidden_features, context_features, num_blocks, use_residual_blocks, random_mask, activation, dropout_probability, use_batch_norm)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._epsilon = 1e-1
 
 
 class MAF(nn.Module):
 
-    def __init__(self, n_layers, n_dim, n_hidden_features, dropout_probability=0.0, use_batch_norm=False, *args, **kwargs):
+    def __init__(self, n_layers, n_dim, n_latent_dim, n_hidden_features, dropout_probability=0.0, use_batch_norm=False, *args, **kwargs):
         super().__init__()
-
         self.n_layers = n_layers
         self.n_dim = n_dim
+        self.n_latent_dim = n_latent_dim
         self.n_hidden_features = n_hidden_features
         self.use_batch_norm = use_batch_norm
         self.dropout_probability = dropout_probability
@@ -65,13 +48,14 @@ class MAF(nn.Module):
         base_distribution = StandardNormal(shape=[self.n_dim])
 
         # Combine into a flow. (For normalizing flows, see arXiv:1912.02762)
-        self.flow = MyFlow(transform=transform, distribution=base_distribution)
+        self.flow = Flow(transform=transform, distribution=base_distribution)
 
     def forward(self, input):
         return [input]
 
-    def sample(self, n_samples):
-        return self.flow.sample(n_samples)
+    def sample(self, noise):
+        samples, _ = self.flow._transform.inverse(noise)
+        return samples
 
     def loss(self, *args, **kwargs):
         input = args[0]

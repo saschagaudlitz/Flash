@@ -1,7 +1,8 @@
 model_params:
   name: MAF
-  n_layers: 5
   n_dim: 6
+  n_latent_dim: 6
+  n_layers: 10
   n_hidden_features: 32
   n_blocks: 5
   dropout_probability: 0.0
@@ -15,4 +16,4 @@ data_params:
   batch_size: 32
 
 trainer_params:
-  max_epochs: 100
+  max_epochs: 300

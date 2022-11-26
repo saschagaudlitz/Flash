@@ -1,7 +1,8 @@
 model_params:
   name: KDE
-  bw_method: 0.1
   n_dim: 6
+  n_latent_dim: 6
+  bw_method: 0.1
 
 experiment_params:
   manual_seed: 1337
