@@ -1,32 +1,42 @@
-import importlib
-import sys
-import numpy as np
+import argparse
+
 import mlflow
+from pytorch_lightning import Trainer
+from pytorch_lightning.utilities.seed import seed_everything
+
+from genhack.dataset import StationsDataset
+from genhack.models import models
+from genhack.experiment import Experiment
+from genhack.utils import get_config
+
+
+def train(config, enable_progress_bar=True):
+    seed_everything(config['experiment_params']['manual_seed'], True)
+
+    # early_stopping = EarlyStopping(monitor='val_kendall', patience=10)
+    # callbacks = [early_stopping]
+    callbacks = []
+
+    datamodule = StationsDataset(**config['data_params'])
+    model = models[config['model_params']['name']](**config['model_params'], datamodule=datamodule)
+    experiment = Experiment(model, config.get('experiment_params', None))
+    trainer = Trainer(callbacks=callbacks, enable_progress_bar=enable_progress_bar, **config['trainer_params'])
+
+    mlflow.pytorch.autolog(log_models=False)
+
+    for name in 'model_params', 'experiment_params', 'data_params', 'trainer_params':
+        if name in config:
+            mlflow.log_params(config[name])
+    trainer.fit(experiment, datamodule=datamodule)
+    result = experiment.test_step(datamodule.test_dataset[:], 0)
+
+    return result
 
 
 if __name__ == '__main__':
-
-    model_name = sys.argv[1]
-    module = importlib.import_module('models')
-    model = getattr(module, model_name)
-
-    parser = model.get_parser()
-    parser.add_argument('model', type=str)
-    args = vars(parser.parse_args())
-
-    np.random.seed(1337)
-
-    # Initiate the mlflow Tracking API
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', '-c', dest="filename", metavar='FILE')
+    args = parser.parse_args()
+    filename = args.filename
     with mlflow.start_run() as run:
-
-        # Create a trainer object for the specified model
-        trainer = model(args, run.info.run_id)
-        mlflow.log_params(args)
-
-        # some models like KDE might not require training
-        if 'n_epochs' in args:
-            trainer.train()
-
-        kendall, ad_mean = trainer.test_step()
-        print(f"Test Kendall: {kendall:10.4f}")
-        print(f"Test AD:      {ad_mean:10.2f}")
+        train(get_config(filename))
