@@ -69,13 +69,13 @@ def plot_hist2d(X, X_true=None):
     for i in range(n_dim):
         for j in range(n_dim):
             if i < j:
-                ax[i][j].hist2d(X[:, i].detach().numpy(), X[:, j].detach().numpy(), bins=50, range=[[-7, 7], [-7, 7]])
+                ax[i][j].hist2d(X[:, i].detach().cpu().numpy(), X[:, j].detach().cpu().numpy(), bins=50, range=[[-7, 7], [-7, 7]])
             if i > j:
                 # delete axes below diagonal
                 fig.delaxes(ax[i][j])
 
     for i in range(n_dim):
-        data = pd.DataFrame(torch.vstack([X_true[:, i], X[:, i]]).T.detach().numpy()) if X_true is not None else X[:, i].detach().numpy()
+        data = pd.DataFrame(torch.vstack([X_true[:, i], X[:, i]]).T.detach().cpu().numpy()) if X_true is not None else X[:, i].detach().cpu().numpy()
         sns.kdeplot(data=data, ax=ax[i][i])
         if ad_ind is not None:
             ax[i][i].set_title(f"AD = {ad_ind[i]:.4f}")

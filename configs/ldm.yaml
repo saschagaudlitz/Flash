@@ -15,6 +15,6 @@ data_params:
   val_split_size: 0.2
 
 trainer_params:
-  max_epochs: 100
+  max_epochs: 0
   accelerator: gpu
   devices: 1 
