@@ -6,6 +6,8 @@ from torch import nn, optim
 from torch.nn import functional as F
 import torch
 
+from genhack.utils import DEVICE
+
 
 class VAE(nn.Module):
 
@@ -60,9 +62,11 @@ class VAE(nn.Module):
         result = self.decoder(result)
         return result
 
+    # "reparametrization trick"
+    # https://agustinus.kristia.de/techblog/2016/12/10/variational-autoencoder/
     def reparameterize(self, mu, log_var):
         std = torch.exp(0.5 * log_var)
-        eps = torch.randn_like(std)
+        eps = torch.randn_like(std, device=DEVICE)
         return eps * std + mu
 
     def forward(self, input):
@@ -73,6 +77,8 @@ class VAE(nn.Module):
     def loss(self, *args, **kwargs):
         reconstruction, input, mu, log_var = args
         reconstruction_loss = F.mse_loss(reconstruction, input)
+        # KL divergence between N(m, v) and N(0, I)
+        # https://agustinus.kristia.de/techblog/2016/12/10/variational-autoencoder/
         kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0)
         loss = reconstruction_loss + self.kld_weight + kld_loss
         return {'loss': loss, 'reconstruction_loss': reconstruction_loss, 'kld_loss': kld_loss}
