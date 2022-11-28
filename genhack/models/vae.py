@@ -1,4 +1,8 @@
-from torch import nn
+"""
+https://github.com/AntixK/PyTorch-VAE/
+"""
+
+from torch import nn, optim
 from torch.nn import functional as F
 import torch
 

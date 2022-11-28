@@ -18,4 +18,3 @@ trainer_params:
   max_epochs: 100
   accelerator: gpu
   devices: 1 
-

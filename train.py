@@ -5,8 +5,8 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.utilities.seed import seed_everything
 
 from genhack.dataset import StationsDataset
-from genhack.models import models
-from genhack.experiment import Experiment
+from genhack.experiments import GANExperiment, Experiment
+from genhack.models import models, TTSGAN
 from genhack.utils import get_config
 
 
@@ -22,8 +22,12 @@ def train(config, enable_progress_bar=True, callbacks=None):
 
     datamodule = StationsDataset(**config['data_params'])
     model = models[config['model_params']['name']](**config['model_params'], datamodule=datamodule)
-    experiment = Experiment(model, config.get('experiment_params', None))
     trainer = Trainer(callbacks=callbacks, enable_progress_bar=enable_progress_bar, **config['trainer_params'])
+
+    if isinstance(model, TTSGAN):
+        experiment = GANExperiment(model, config.get('experiment_params', None))
+    else:
+        experiment = Experiment(model, config.get('experiment_params', None))
 
     mlflow.pytorch.autolog(log_models=False)
 

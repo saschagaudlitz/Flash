@@ -16,4 +16,4 @@ data_params:
   batch_size: 32
 
 trainer_params:
-  max_epochs: 300
+  max_epochs: 100

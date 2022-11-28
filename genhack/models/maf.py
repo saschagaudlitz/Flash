@@ -1,12 +1,16 @@
+"""
+https://pytorch-lightning.readthedocs.io/en/stable/notebooks/course_UvA-DL/09-normalizing-flows.html
+"""
+
 from nflows.transforms import MaskedAffineAutoregressiveTransform, CompositeTransform, AffineCouplingTransform
 from nflows.transforms.permutations import ReversePermutation, RandomPermutation
 from nflows.distributions import StandardNormal
 from nflows.flows import Flow
-from torch import nn
+from torch import nn, optim
 from torch.nn import functional as F
 
 
-class MyMaskedAffineAutoregressiveTransform(MaskedAffineAutoregressiveTransform):
+class FlooredMaskedAffineAutoregressiveTransform(MaskedAffineAutoregressiveTransform):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

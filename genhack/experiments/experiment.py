@@ -3,6 +3,7 @@ import mlflow.pytorch
 import torch
 from torch import optim
 import pytorch_lightning as pl
+from torch.optim.lr_scheduler import StepLR
 
 from genhack.utils import calculate_ri, anderson_darling, log_test_metrics, log_hist2d, DEVICE
 
@@ -22,10 +23,10 @@ class Experiment(pl.LightningModule):
         if len(list(self.model.parameters())) > 0:
             adam = optim.Adam(self.model.parameters(), lr=self.params['learning_rate'])
             return adam
-            # scheduler = ReduceLROnPlateau(adam, mode='min', factor=0.1)
+            # scheduler = StepLR(adam, step_size=20, gamma=0.1)
             # return [adam], [scheduler]
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch, batch_idx, optimizer_idx=None):
         result = self.model(batch[0])
         loss = self.model.loss(*result)
         self.log_dict({key: val.item() for key, val in loss.items()})

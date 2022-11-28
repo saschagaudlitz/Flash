@@ -1,6 +1,6 @@
 import torch
 from denoising_diffusion_pytorch import Unet1D, GaussianDiffusion1D
-from torch import nn
+from torch import nn, optim
 from tqdm import tqdm
 
 
