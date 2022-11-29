@@ -20,11 +20,17 @@ class StationsDataset(LightningDataModule):
         self.val_split_size = val_split_size
 
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/df_train.csv')
-        X = pd.read_csv(filename)[COLS].to_numpy()
+        df = pd.read_csv(filename)
+        df['dates'] = pd.to_datetime(df['dates'])
+        df = df.set_index('dates')[COLS]
+        X = df.to_numpy()
         X_train, X_val = train_test_split(X, test_size=val_split_size)
 
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/df_test.csv')
-        X_test = pd.read_csv(filename)[COLS].to_numpy()
+        df = pd.read_csv(filename)
+        df['dates'] = pd.to_datetime(df['dates'])
+        df = df.set_index('dates')[COLS]
+        X_test = df.to_numpy()
 
         self.train_dataset = TensorDataset(torch.tensor(X_train.astype(np.float32)))
         self.val_dataset = TensorDataset(torch.tensor(X_val.astype(np.float32)))
