@@ -30,6 +30,7 @@ class TTSGAN(nn.Module):
         self.discriminator = Discriminator(n_channels=n_dim, seq_length=seq_length, patch_size=patch_size, emb_size=emb_size, n_heads=n_heads, depth=depth, n_classes=n_classes, attention_dropout_rate=attention_dropout_rate, forward_dropout_rate=forward_dropout_rate, forward_expansion=forward_expansion)
 
     def forward(self, inputs):
+        inputs, time = inputs
         return [inputs.reshape(-1, self.n_dim, 1, self.seq_length)]
 
     def loss(self, *args, **kwargs):

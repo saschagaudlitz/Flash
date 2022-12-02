@@ -4,7 +4,7 @@ from hyperopt import hp, fmin, tpe, space_eval
 from ray.tune.integration.mlflow import mlflow_mixin
 
 from genhack.utils import get_config
-from train import train
+from run import train
 
 space = {
     'model_params.n_blocks': hp.choice('n_blocks', np.arange(3, 5, 10)),

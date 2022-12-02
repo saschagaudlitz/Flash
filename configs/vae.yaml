@@ -1,8 +1,8 @@
 model_params:
   name: VAE
   n_dim: 6
-  n_latent_dim: 6
-  n_hidden_dims: [6, 6, 6, 6, 6, 6]
+  n_latent_dim: 50
+  n_hidden_dims: [6, 15, 20, 30]
   kld_weight: 1
 
 experiment_params:
@@ -11,6 +11,8 @@ experiment_params:
 
 data_params:
   batch_size: 32
+  val_split_size: 0.25
+  train_val_shuffle: false
 
 trainer_params:
   max_epochs: 50

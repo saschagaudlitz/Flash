@@ -6,7 +6,7 @@ from ray.tune.search.hyperopt import HyperOptSearch
 import os
 
 from genhack.utils import get_config
-from train import train
+from run import train
 
 param_space = {
     'model_params.n_blocks': tune.choice([3, 5, 10]),

@@ -27,7 +27,7 @@ class Experiment(pl.LightningModule):
             # return [adam], [scheduler]
 
     def training_step(self, batch, batch_idx, optimizer_idx=None):
-        result = self.model(batch[0])
+        result = self.model(batch)
         loss = self.model.loss(*result)
         self.log_dict({key: val.item() for key, val in loss.items()})
         return loss['loss']

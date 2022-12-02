@@ -69,10 +69,11 @@ class VAE(nn.Module):
         eps = torch.randn_like(std, device=DEVICE)
         return eps * std + mu
 
-    def forward(self, input):
-        mu, log_var = self.encode(input)
+    def forward(self, inputs):
+        inputs, time = inputs
+        mu, log_var = self.encode(inputs)
         z = self.reparameterize(mu, log_var)
-        return self.decode(z), input, mu, log_var
+        return self.decode(z), inputs, mu, log_var
 
     def loss(self, *args, **kwargs):
         reconstruction, input, mu, log_var = args

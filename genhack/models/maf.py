@@ -7,7 +7,7 @@ from nflows.transforms.permutations import ReversePermutation, RandomPermutation
 from nflows.distributions import StandardNormal
 from nflows.flows import Flow
 from torch import nn, optim
-from torch.nn import functional as F
+import torch
 
 
 class FlooredMaskedAffineAutoregressiveTransform(MaskedAffineAutoregressiveTransform):
@@ -15,6 +15,39 @@ class FlooredMaskedAffineAutoregressiveTransform(MaskedAffineAutoregressiveTrans
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._epsilon = 1e-1
+
+
+class PowerLawWeights(nn.Module):
+
+    def __init__(self, a=0.9, b=0.1, gamma=1.):
+        """(a * t + b) ** gamma"""
+        super().__init__()
+        self.a = a
+        self.b = b
+        self.gamma = gamma
+
+    def forward(self, input):
+        return (self.a * input + self.b) ** self.gamma
+
+
+class LearnableWeights(nn.Module):
+
+    def __init__(self, pts=64, n_hidden_units=100):
+        """Learns non-linear function [0,1]->[0,inf] which integrates to one."""
+        super().__init__()
+        self.pts = pts
+        self.n_hidden_units = n_hidden_units
+        self.model = nn.Sequential(
+            nn.Linear(1, n_hidden_units),
+            nn.LeakyReLU(),
+            nn.Linear(n_hidden_units, 1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, input):
+        dt = 1 / self.pts
+        normalize = self.model(torch.arange(0, 1, dt)[:, None]).sum() * dt
+        return self.model(input[:, None]).reshape(-1) / normalize
 
 
 class MAF(nn.Module):
@@ -29,13 +62,6 @@ class MAF(nn.Module):
         self.dropout_probability = dropout_probability
 
         transforms = []
-
-        # # coupling instead of AR
-        # for _ in range(self.n_layers):
-        #     def create_net(in_features, out_features):
-        #         return nets.ResidualNet(in_features, out_features, hidden_features=30, num_blocks=5)
-        #     transforms.append(RandomPermutation(features=self.n_dim))
-        #     transforms.append(AffineCouplingTransform(mask=torch.Tensor([1., 1., 1., 0., 0., 0.]), transform_net_create_fn=create_net))
 
         for _ in range(self.n_layers):
             transforms.append(ReversePermutation(features=self.n_dim))
@@ -53,14 +79,17 @@ class MAF(nn.Module):
 
         # Combine into a flow. (For normalizing flows, see arXiv:1912.02762)
         self.flow = Flow(transform=transform, distribution=base_distribution)
+        self.weights = LearnableWeights()
 
-    def forward(self, input):
-        return [input]
+    def forward(self, inputs):
+        inputs, time = inputs
+        return inputs, time
 
     def sample(self, noise):
         samples, _ = self.flow._transform.inverse(noise)
         return samples
 
     def loss(self, *args, **kwargs):
-        input = args[0]
-        return {'loss': -self.flow.log_prob(inputs=input).mean()}
+        inputs, time = args
+        weights = self.weights(time)
+        return {'loss': torch.mean(-weights * self.flow.log_prob(inputs=inputs))}

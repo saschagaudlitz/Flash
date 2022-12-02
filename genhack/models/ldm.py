@@ -28,8 +28,8 @@ class LDM(nn.Module):
             objective='pred_v',
         )
 
-    def forward(self, input):
-        return [input]
+    def forward(self, inputs):
+        return [inputs]
 
     def sample(self, noise):
 
