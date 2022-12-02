@@ -108,7 +108,7 @@ def log_test_metrics(X_true, X_pred, prefix):
 def log_hist2d(label, X, X_true=None):
     """Log 2d-histograms in MLFlow.
     """
-    fname = f'hist2d_{label}.png'
+    fname = f'figures/hist2d_{label}.png'
     fig = plot_hist2d(X, X_true)
     fig.suptitle(fname, fontsize=20)
     fig.canvas.draw()
@@ -117,7 +117,7 @@ def log_hist2d(label, X, X_true=None):
 
 
 def log_weights(label, date_range, weights):
-    fname = f'{label}.png'
+    fname = f'figures/{label}.png'
     fig, ax = plt.subplots(figsize=(5, 4), constrained_layout=True)
     ax.plot(date_range, weights)
     fig.canvas.draw()

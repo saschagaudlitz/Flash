@@ -5,8 +5,8 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.utilities.seed import seed_everything
 
 from genhack.dataset import StationsDataset
-from genhack.experiments import GANExperiment, Experiment, experiments
-from genhack.models import models, TTSGAN
+from genhack.experiments import Experiment, experiments
+from genhack.models import models
 from genhack.utils import get_config, DEVICE
 
 
@@ -36,6 +36,8 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
     # training
 
     if mode == 'train':
+
+        mlflow.log_dict(config, 'config.yaml')
 
         mlflow.log_param('train_start_date', datamodule.train_start_date)
         mlflow.log_param('train_end_date', datamodule.train_end_date)
@@ -67,10 +69,15 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', '-c', dest="filename", metavar='FILE')
     parser.add_argument('--mode', '-m', type=str, choices=['train', 'test'], default='train')
+    parser.add_argument('--config', '-c', dest="filename", metavar='FILE')
     parser.add_argument('--run_id', '-r', type=str, default=None)
     args = parser.parse_args()
-    filename = args.filename
+
+    assert not (args.mode == 'test' and args.filename is not None), "--config is invalid in `test` mode, it's retrieved from mlflow."
+    assert not (args.mode == 'train' and args.run_id is not None), "--run_id is invalid in `train` mode, it's generated automatically."
+
     with mlflow.start_run(run_id=args.run_id) as active_run:
-        run(get_config(filename), mode=args.mode)
+        filename = args.filename if args.mode == 'train' else mlflow.get_artifact_uri(artifact_path='config.yaml')
+        config = get_config(filename)
+        run(config, mode=args.mode)
