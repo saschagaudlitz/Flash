@@ -42,7 +42,7 @@ Note that in `mlflow` you can run an *experiment* that has several *runs*. For e
 
 You can run a model from the root directory of the project by specifying the name of the class and the config argument as follows:
 
-    python3 train.py --config=configs/vae.yaml
+    python3 run.py --config=configs/vae.yaml
 
 ## From notebook
 
@@ -55,3 +55,9 @@ You need to install `hyperopt` and `ray` for hyperparameter tuning.
     pip install hyperopt ray
 
 See `hypertune.py` for example script.
+
+## Testing model
+
+Testing metrics and plots are recorded after the training run. Alternatively, you can run testing separately (for example, with another seed):
+
+    python3 run.py --config=configs/maf.yaml --mode=test --run_id=1af75f70444d43999157bbf6c20bccda

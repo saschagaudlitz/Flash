@@ -114,3 +114,12 @@ def log_hist2d(label, X, X_true=None):
     fig.canvas.draw()
     image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
     mlflow.log_image(image, fname)
+
+
+def log_weights(label, date_range, weights):
+    fname = f'{label}.png'
+    fig, ax = plt.subplots(figsize=(5, 4), constrained_layout=True)
+    ax.plot(date_range, weights)
+    fig.canvas.draw()
+    image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
+    mlflow.log_image(image, fname)

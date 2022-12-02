@@ -10,30 +10,32 @@ from torch import nn, optim
 import torch
 
 
-class FlooredMaskedAffineAutoregressiveTransform(MaskedAffineAutoregressiveTransform):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._epsilon = 1e-1
-
-
 class PowerLawWeights(nn.Module):
 
-    def __init__(self, a=0.9, b=0.1, gamma=1.):
-        """(a * t + b) ** gamma"""
+    def __init__(self, a=0.9, b=0.1, c=1., *args, **kwargs):
+        """(a * t + b) ** c"""
         super().__init__()
         self.a = a
         self.b = b
-        self.gamma = gamma
+        self.c = c
 
     def forward(self, input):
-        return (self.a * input + self.b) ** self.gamma
+        return (self.a * input + self.b) ** self.c
 
 
 class LearnableWeights(nn.Module):
 
-    def __init__(self, pts=64, n_hidden_units=100):
-        """Learns non-linear function [0,1]->[0,inf] which integrates to one."""
+    def __init__(self, pts=64, n_hidden_units=100, *args, **kwargs):
+        """
+        Learns non-linear function [0,1]->[0,inf] which integrates to one.
+
+        Parameters
+        ----------
+        pts : int
+            Integration points for calculation of the normalizing constant, so the weights integrate to one
+        n_hidden_units
+            Number of hidden units in the weight function
+        """
         super().__init__()
         self.pts = pts
         self.n_hidden_units = n_hidden_units
@@ -50,9 +52,16 @@ class LearnableWeights(nn.Module):
         return self.model(input[:, None]).reshape(-1) / normalize
 
 
+weight_models = {
+    'LearnableWeights': LearnableWeights,
+    'PowerLawWeights': PowerLawWeights,
+}
+
+
 class MAF(nn.Module):
 
-    def __init__(self, n_layers, n_dim, n_latent_dim, n_hidden_features, dropout_probability=0.0, use_batch_norm=False, *args, **kwargs):
+    def __init__(self, n_layers, n_dim, n_latent_dim, n_hidden_features, dropout_probability=0.0, use_batch_norm=False, weights='LearnedWeights', weights_kwargs=None, *args, **kwargs):
+        """Note that you can disable weighting by using PowerLawWeights with c = 0."""
         super().__init__()
         self.n_layers = n_layers
         self.n_dim = n_dim
@@ -79,7 +88,9 @@ class MAF(nn.Module):
 
         # Combine into a flow. (For normalizing flows, see arXiv:1912.02762)
         self.flow = Flow(transform=transform, distribution=base_distribution)
-        self.weights = LearnableWeights()
+
+        # initialize weights
+        self.weights = weight_models[weights](**weights_kwargs)
 
     def forward(self, inputs):
         inputs, time = inputs

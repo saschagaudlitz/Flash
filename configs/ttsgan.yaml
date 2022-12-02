@@ -13,6 +13,7 @@ model_params:
   forward_expansion: 4
 
 experiment_params:
+  experiment_class: GANExperiment
   discriminator_learning_rate: 0.00001
   generator_learning_rate: 0.000001
   n_discriminator_steps: 32

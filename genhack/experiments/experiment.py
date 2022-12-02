@@ -4,20 +4,24 @@ import torch
 from torch import optim
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import StepLR
+import pandas as pd
 
-from genhack.utils import calculate_ri, anderson_darling, log_test_metrics, log_hist2d, DEVICE
+from genhack.utils import calculate_ri, anderson_darling, log_test_metrics, log_hist2d, DEVICE, log_weights
 
 
 class Experiment(pl.LightningModule):
 
-    def __init__(self, model, params, *args, **kwargs):
+    def __init__(self, model, params, best_ad_mean_model_uri, best_kendall_model_uri, train_start_date, train_end_date, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
         self.params = params
-        self.ri_true = None
+        self.best_ad_mean_model_uri = best_ad_mean_model_uri
+        self.best_kendall_model_uri = best_kendall_model_uri
+        self.train_start_date = train_start_date
+        self.train_end_date = train_end_date
 
+        self.ri_true = None
         self.best_ad_mean = self.best_kendall = math.inf
-        self.best_ad_mean_model_uri = self.best_kendall_model_uri = None
 
     def configure_optimizers(self):
         if len(list(self.model.parameters())) > 0:
@@ -56,26 +60,38 @@ class Experiment(pl.LightningModule):
         if ad_mean < self.best_ad_mean:
             model_info = mlflow.pytorch.log_model(self.model, 'best_ad_mean')
             self.best_ad_mean = ad_mean
-            self.best_ad_mean_model_uri = model_info.model_uri
         if kendall < self.best_kendall:
             model_info = mlflow.pytorch.log_model(self.model, 'best_kendall')
             self.best_kendall = kendall
-            self.best_kendall_model_uri = model_info.model_uri
 
     def test_step(self, batch, batch_idx):
 
         X_test = batch[0]
         log_hist2d('test_true', X_test)
 
+        # log best AD
+
         best_model = mlflow.pytorch.load_model(self.best_ad_mean_model_uri)
         X_test_pred = best_model.sample(torch.randn((len(X_test), self.model.n_latent_dim), device=DEVICE))
         test_ba_kendall, test_ba_ad_mean = log_test_metrics(X_test, X_test_pred, 'ba')
         log_hist2d(f'test_ba_pred', X_test_pred, X_test)
 
+        if hasattr(best_model, 'weights'):
+            date_range = pd.date_range(self.train_start_date, self.train_end_date, freq='M')
+            weights = best_model.weights(torch.linspace(0, 1, len(date_range))[:, None]).detach().numpy()
+            log_weights('test_ba_weights', date_range, weights)
+
+        # log best Kendall
+
         best_model = mlflow.pytorch.load_model(self.best_kendall_model_uri)
         X_test_pred = best_model.sample(torch.randn((len(X_test), self.model.n_latent_dim), device=DEVICE))
         test_bk_kendall, test_bk_ad_mean = log_test_metrics(X_test, X_test_pred, 'bk')
         log_hist2d(f'test_bk_pred', X_test_pred, X_test)
+
+        if hasattr(best_model, 'weights'):
+            date_range = pd.date_range(self.train_start_date, self.train_end_date, freq='M')
+            weights = best_model.weights(torch.linspace(0, 1, len(date_range))[:, None]).detach().numpy()
+            log_weights('test_bk_weights', date_range, weights)
 
         return {
             f'test_ba_kendall': test_ba_kendall,

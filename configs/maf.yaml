@@ -7,6 +7,11 @@ model_params:
   n_blocks: 5
   dropout_probability: 0.0
   use_batch_norm: true
+  weights: PowerLawWeights
+  weights_kwargs:
+    a: -0.9
+    b: 1.1
+    c: 2.0
 
 experiment_params:
   learning_rate: 0.0001
@@ -18,4 +23,4 @@ data_params:
   train_val_shuffle: false
 
 trainer_params:
-  max_epochs: 50
+  max_epochs: 100
