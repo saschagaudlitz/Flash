@@ -11,7 +11,7 @@
 # G_\theta(Z) = np.max(0, \theta.Z)
 ############################################################################
 import sys
-sys.path.append('/parameters')
+sys.path.append('/parameters/20221203')
 
 import mlflow
 import torch
@@ -29,8 +29,8 @@ def generative_model(noise):
     """
     # See below an example
     # ---------------------
-    latent_variable = torch.Tensor(noise[:, :6])
-    model = mlflow.pytorch.load_model('parameters/best_model')
+    latent_variable = torch.Tensor(noise[:, :7])
+    model = mlflow.pytorch.load_model('parameters/20221203/best_ad_mean')
     samples = model.sample(latent_variable).detach().numpy()
 
     return samples

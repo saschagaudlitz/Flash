@@ -73,8 +73,6 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
 
     if mode == 'train':
 
-        print(mlflow.active_run().info.run_id)
-
         mlflow.log_dict(config, 'config.yaml')
 
         mlflow.log_param('train_start_date', datamodule.train_start_date)
