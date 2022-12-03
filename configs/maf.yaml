@@ -1,5 +1,5 @@
 model_params:
-  name: MAF
+  model_name: MAF
   n_dim: 6
   n_latent_dim: 7
   n_layers: 10
@@ -10,10 +10,14 @@ model_params:
   use_residual_blocks: true
   use_random_permutations: false
   use_random_masks: false
-  weights: LearnableWeights
-  trend_factor: 1.2
-  weights_kwargs:
-    n_hidden_units: 100
+  weights_model_params:
+    model_name: LearnableWeights
+    kwargs:
+      n_hidden_units: 100
+  ts_model_params:
+    model_name: TrendModel
+    kwargs:
+      trend_factor: 1.2
 
 experiment_params:
   learning_rate: 0.0001
@@ -26,4 +30,4 @@ data_params:
   train_val_shuffle: false
 
 trainer_params:
-  max_epochs: 50
+  max_epochs: 30

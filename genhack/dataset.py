@@ -1,5 +1,6 @@
 from pytorch_lightning import LightningDataModule
 import pandas as pd
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 import torch
 import numpy as np
@@ -23,24 +24,19 @@ class StationsDataset(LightningDataModule):
         self.train_val_shuffle = train_val_shuffle
 
         filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/df_all.csv')
-        df = pd.read_csv(filename)
-        df['dates'] = pd.to_datetime(df['dates'])
-        df = df.set_index('dates')[COLS]
-        X = torch.tensor(df.to_numpy().astype(np.float32))
+        self.df = pd.read_csv(filename)
+        self.df['dates'] = pd.to_datetime(self.df['dates'])
+        self.df = self.df.set_index('dates')[COLS]
+        X = torch.tensor(self.df.to_numpy().astype(np.float32))
 
         # train/val/test split
         # test split is always deterministic (take last period)
         # train/val split can be random (train/val mixed together)
         time = torch.linspace(0, 1, len(X))
         X_train_val, X_test, date_train_val, date_test, time_train_val, time_test = \
-            train_test_split(X, df.index, time, test_size=test_split_size, shuffle=False)
+            train_test_split(X, self.df.index, time, test_size=test_split_size, shuffle=False)
         X_train, X_val, date_train, date_val, time_train, time_val = \
             train_test_split(X_train_val, date_train_val, time_train_val, test_size=val_split_size, shuffle=train_val_shuffle)
-
-        # detrend
-        # intercept = torch.tensor([-0.3, -0.27, -0.41, -0.39, -0.45, -0.68])
-        # trend = torch.tensor([0.56, 0.46, 0.83, 0.78, 0.89, 1.36])
-        # X_train = X_train - intercept[None, :] - time_train[:, None] * trend[None, :]
 
         self.train_start_date = date_train.min()
         self.train_end_date = date_train.max()

@@ -4,7 +4,6 @@ https://pytorch-lightning.readthedocs.io/en/stable/notebooks/course_UvA-DL/09-no
 import math
 
 from nflows.flows import MaskedAutoregressiveFlow
-from scipy.stats import norm
 from torch import nn
 import torch
 
@@ -53,7 +52,7 @@ class LearnableWeights(nn.Module):
         return self.model(input[:, None]).reshape(-1) / normalize
 
 
-weight_models = {
+weights_models = {
     'LearnableWeights': LearnableWeights,
     'PowerLawWeights': PowerLawWeights,
 }
@@ -61,15 +60,29 @@ weight_models = {
 
 class MAF(nn.Module):
 
-    def __init__(self, trend_factor, n_layers, n_dim, n_latent_dim, n_hidden_features, n_blocks, dropout_probability=0.0, use_residual_blocks=True, use_batch_norm=False, use_random_permutations=False, use_random_masks=False, weights='LearnedWeights', weights_kwargs=None, *args, **kwargs):
+    def __init__(self,
+                 n_layers,
+                 n_dim,
+                 n_latent_dim,
+                 n_hidden_features,
+                 n_blocks,
+                 ts_model,
+                 weights_model_params,
+                 dropout_probability=0.0,
+                 use_residual_blocks=True,
+                 use_batch_norm=False,
+                 use_random_permutations=False,
+                 use_random_masks=False,
+                 *args, **kwargs):
+
         """Note that you can disable weighting by using PowerLawWeights with c = 0."""
         super().__init__()
-        self.trend_factor = trend_factor
         self.n_layers = n_layers
         self.n_dim = n_dim
         self.n_latent_dim = n_latent_dim
         self.n_hidden_features = n_hidden_features
         self.n_blocks = n_blocks
+        self.ts_model = ts_model
         self.use_batch_norm = use_batch_norm
         self.use_residual_blocks = use_residual_blocks
         self.use_random_permutations = use_random_permutations
@@ -88,7 +101,7 @@ class MAF(nn.Module):
                                              batch_norm_within_layers=self.use_batch_norm)
 
         # initialize weights
-        self.weights = weight_models[weights](**weights_kwargs)
+        self.weights = weights_models[weights_model_params['model_name']](**weights_model_params['kwargs'])
 
     def forward(self, inputs):
         inputs, time = inputs
@@ -101,10 +114,10 @@ class MAF(nn.Module):
         noise = noise[:, :6]
 
         # entrend
-        intercept = torch.tensor([-0.3, -0.27, -0.41, -0.39, -0.45, -0.68])
-        trend = self.trend_factor * torch.tensor([0.56, 0.46, 0.83, 0.78, 0.89, 1.36])
+        # @todo currently we have ts_model + generative_model
+        # one should consider conditional models too
         samples, _ = self.flow._transform.inverse(noise)
-        return intercept[None, :] + time[:, None] * trend[None, :] + torch.squeeze(samples)
+        return self.ts_model(time) + torch.squeeze(samples)
 
     def loss(self, *args, **kwargs):
         inputs, time = args

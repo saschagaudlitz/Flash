@@ -1,9 +1,12 @@
 import argparse
 
 import mlflow
+import torch
 from mlflow.entities import ViewType
 from pytorch_lightning import Trainer
 from pytorch_lightning.utilities.seed import seed_everything
+from sklearn.linear_model import LinearRegression
+from torch import nn
 from tqdm import tqdm
 
 from genhack.dataset import StationsDataset
@@ -12,12 +15,46 @@ from genhack.models import models
 from genhack.utils import get_config, DEVICE
 
 
+class TrendModel(nn.Module):
+
+    def __init__(self, data, trend_factor=1.) -> None:
+        super().__init__()
+        self.data = data
+        self.trend_factor = trend_factor
+
+        self.coef = None
+        self.intercept = None
+
+    def forward(self, time):
+        return self.intercept[None, :] + self.trend_factor * self.coef[None, :] * time[:, None]
+
+    def fit(self):
+        lr_data = self.data.resample('Y').mean()
+        lr = LinearRegression()
+        xs = torch.linspace(0, 1, len(lr_data))[:, None]
+        reg = lr.fit(xs, lr_data)
+
+        self.coef = nn.Parameter(torch.tensor(reg.coef_.reshape(-1)), requires_grad=False)
+        self.intercept = nn.Parameter(torch.tensor(reg.intercept_.reshape(-1)), requires_grad=False)
+
+
+ts_models = {
+    'TrendModel': TrendModel,
+}
+
+
 def run(config, mode='train', enable_progress_bar=True, callbacks=None):
 
     seed_everything(config['experiment_params']['manual_seed'], True)
     datamodule = StationsDataset(**config['data_params'])
 
-    model = models[config['model_params']['name']](**config['model_params'], datamodule=datamodule)
+    # initialize ts model
+    ts_model = None
+    if 'ts_model_params' in config['model_params']:
+        ts_model_params = config['model_params']['ts_model_params']
+        ts_model = ts_models[ts_model_params['model_name']](datamodule.df, **ts_model_params['kwargs'])
+
+    model = models[config['model_params']['model_name']](**config['model_params'], datamodule=datamodule, ts_model=ts_model)
 
     # initialize experiment
 
@@ -47,13 +84,20 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
         mlflow.log_param('test_start_date', datamodule.test_start_date)
         mlflow.log_param('test_end_date', datamodule.test_end_date)
 
+        # train ts model
+
+        if ts_model is not None:
+            ts_model.fit()
+
+        # train generative model
+
         if callbacks is None:
             callbacks = []
 
         # early_stopping = EarlyStopping(monitor='val_kendall', patience=10)
         # callbacks += [early_stopping]
 
-        # num_sanity_val_steps = 0 is important, otherwise resets metrics!
+        # num_sanity_val_steps = 0 is important, otherwise resets best metrics from inf to arbitrary value!
         trainer = Trainer(callbacks=callbacks, enable_progress_bar=enable_progress_bar, num_sanity_val_steps=0, **config['trainer_params'])
 
         mlflow.pytorch.autolog(log_models=False)
