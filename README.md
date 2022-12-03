@@ -30,7 +30,7 @@ We use MLFlow for model tracking.
 
 Then start the MLFlow from the root directory of the project:
 
-    mlflow server
+    mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root=./mlruns
 
 Then you can access the server under `127.0.0.1:5000`.
 
@@ -42,7 +42,7 @@ Note that in `mlflow` you can run an *experiment* that has several *runs*. For e
 
 You can run a model from the root directory of the project by specifying the name of the class and the config argument as follows:
 
-    python3 run.py --config=configs/vae.yaml
+    MLFLOW_TRACKING_URI=sqlite:///mlflow.db python3 run.py --config=configs/vae.yaml
 
 ## From notebook
 

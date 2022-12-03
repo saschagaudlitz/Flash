@@ -7,13 +7,11 @@ import torch
 import yaml
 from PIL import Image
 
-
 COLS = ['s1', 's2', 's3', 's4', 's5', 's6']
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def get_config(filename):
-
     with open(filename, 'r') as file:
         try:
             config = yaml.safe_load(file)
@@ -87,22 +85,43 @@ def plot_hist2d(X, X_true=None):
     return fig
 
 
-def log_test_metrics(X_true, X_pred, prefix):
-    """Logs Kendall absolute error and Anderson-Darling distances in MLFlow.
-    Note that this function should be run in the MLFlow context.
-    """
-    n_dim = X_true.shape[1]
+def evaluate_model(model, prefix, X_test, time, n_test_samples, n_latent_dim, train_start_date, train_end_date):
+    kendall_arr, ad_ind_arr, ad_mean_arr = [], [], []
+    X_test_pred = None
 
-    kendall = kendall_absolute_error(X_true, X_pred)
-    ad_ind, ad_mean = anderson_darling(X_true, X_pred)
+    # calculate averaged metrics
 
-    mlflow.log_metric(f'test_{prefix}_kendall', kendall)
-    mlflow.log_metric(f'test_{prefix}_ad_mean', ad_mean)
+    for _ in range(n_test_samples):
+        X_test_pred = model.sample(torch.randn((len(X_test), n_latent_dim), device=DEVICE), time)
+        kendall = kendall_absolute_error(X_test, X_test_pred)
+        ad_ind, ad_mean = anderson_darling(X_test, X_test_pred)
 
-    for i in range(n_dim):
-        mlflow.log_metric(f'test_{prefix}_ad_{i + 1}', ad_ind[i])
+        kendall_arr.append(kendall)
+        ad_ind_arr.append(ad_ind[None, :])
+        ad_mean_arr.append(ad_mean)
 
-    return kendall, ad_mean
+    test_kendall = torch.tensor(kendall_arr).mean(dim=0)
+    test_ad_ind = torch.cat(ad_ind_arr, dim=0).mean(dim=0)
+    test_ad_mean = torch.tensor(ad_mean_arr).mean(dim=0)
+
+    # logs Kendall absolute error and Anderson-Darling distances in MLFlow.
+
+    mlflow.log_metric(f'test_{prefix}_kendall', test_kendall)
+    mlflow.log_metric(f'test_{prefix}_ad_mean', test_ad_mean)
+
+    for i in range(test_ad_ind.shape[0]):
+        mlflow.log_metric(f'test_{prefix}_ad_{i + 1}', test_ad_ind[i])
+
+    # log the histogram
+
+    log_hist2d(f'test_{prefix}_pred', X_test_pred, X_test)
+
+    if hasattr(model, 'weights'):
+        date_range = pd.date_range(train_start_date, train_end_date, freq='M')
+        weights = model.weights(torch.linspace(0, 1, len(date_range))[:, None]).detach().numpy()
+        log_weights(f'test_{prefix}_weights', date_range, weights)
+
+    return test_kendall, test_ad_ind, test_ad_mean
 
 
 def log_hist2d(label, X, X_true=None):

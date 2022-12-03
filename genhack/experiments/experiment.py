@@ -4,9 +4,8 @@ import torch
 from torch import optim
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import StepLR
-import pandas as pd
 
-from genhack.utils import calculate_ri, anderson_darling, log_test_metrics, log_hist2d, DEVICE, log_weights
+from genhack.utils import calculate_ri, anderson_darling, log_hist2d, DEVICE, evaluate_model
 
 
 class Experiment(pl.LightningModule):
@@ -39,12 +38,13 @@ class Experiment(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
 
         X_val = batch[0]
+        time = batch[1]
 
         # calculate Kendall ri for the validation set only once, because this operation takes a couple of seconds
         if self.ri_true is None:
             self.ri_true = calculate_ri(X_val)
 
-        X_val_pred = self.model.sample(torch.randn((len(X_val), self.model.n_latent_dim), device=DEVICE))
+        X_val_pred = self.model.sample(torch.randn((len(X_val), self.model.n_latent_dim), device=DEVICE), time)
         ad_ind, ad_mean = anderson_darling(X_val, X_val_pred)
 
         # calculate Kendall explicitly to avoid the evaluation of ri_true at the end of every epoch
@@ -58,40 +58,47 @@ class Experiment(pl.LightningModule):
 
         # save best model
         if ad_mean < self.best_ad_mean:
-            model_info = mlflow.pytorch.log_model(self.model, 'best_ad_mean')
+            mlflow.pytorch.log_model(self.model, 'best_ad_mean')
+            mlflow.log_metric('best_ad_mean_step', self.current_epoch)
             self.best_ad_mean = ad_mean
         if kendall < self.best_kendall:
-            model_info = mlflow.pytorch.log_model(self.model, 'best_kendall')
+            mlflow.pytorch.log_model(self.model, 'best_kendall')
+            mlflow.log_metric('best_kendall_step', self.current_epoch)
             self.best_kendall = kendall
 
     def test_step(self, batch, batch_idx):
 
         X_test = batch[0]
+        time = batch[1]
+
         log_hist2d('test_true', X_test)
 
+        # take bigger number of samples to reduce variance
+        N_TEST_SAMPLES = 10
+
         # log best AD
-
         best_model = mlflow.pytorch.load_model(self.best_ad_mean_model_uri)
-        X_test_pred = best_model.sample(torch.randn((len(X_test), self.model.n_latent_dim), device=DEVICE))
-        test_ba_kendall, test_ba_ad_mean = log_test_metrics(X_test, X_test_pred, 'ba')
-        log_hist2d(f'test_ba_pred', X_test_pred, X_test)
-
-        if hasattr(best_model, 'weights'):
-            date_range = pd.date_range(self.train_start_date, self.train_end_date, freq='M')
-            weights = best_model.weights(torch.linspace(0, 1, len(date_range))[:, None]).detach().numpy()
-            log_weights('test_ba_weights', date_range, weights)
+        test_ba_kendall, test_ba_ad_ind, test_ba_ad_mean = \
+            evaluate_model(best_model,
+                           X_test=X_test,
+                           time=time,
+                           prefix='ba',
+                           n_test_samples=N_TEST_SAMPLES,
+                           n_latent_dim=self.model.n_latent_dim,
+                           train_start_date=self.train_start_date,
+                           train_end_date=self.train_end_date)
 
         # log best Kendall
-
         best_model = mlflow.pytorch.load_model(self.best_kendall_model_uri)
-        X_test_pred = best_model.sample(torch.randn((len(X_test), self.model.n_latent_dim), device=DEVICE))
-        test_bk_kendall, test_bk_ad_mean = log_test_metrics(X_test, X_test_pred, 'bk')
-        log_hist2d(f'test_bk_pred', X_test_pred, X_test)
-
-        if hasattr(best_model, 'weights'):
-            date_range = pd.date_range(self.train_start_date, self.train_end_date, freq='M')
-            weights = best_model.weights(torch.linspace(0, 1, len(date_range))[:, None]).detach().numpy()
-            log_weights('test_bk_weights', date_range, weights)
+        test_bk_kendall, test_bk_ad_ind, test_bk_ad_mean = \
+            evaluate_model(best_model,
+                           X_test=X_test,
+                           time=time,
+                           prefix='bk',
+                           n_test_samples=N_TEST_SAMPLES,
+                           n_latent_dim=self.model.n_latent_dim,
+                           train_start_date=self.train_start_date,
+                           train_end_date=self.train_end_date)
 
         return {
             f'test_ba_kendall': test_ba_kendall,

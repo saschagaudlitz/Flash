@@ -13,12 +13,13 @@ model_params:
 
 experiment_params:
   learning_rate: 0.0001
-  manual_seed: 1338
+  manual_seed: 1337
 
 data_params:
   batch_size: 32
   val_split_size: 0.25
+  test_split_size: 0.25
   train_val_shuffle: false
 
 trainer_params:
-  max_epochs: 100
+  max_epochs: 1

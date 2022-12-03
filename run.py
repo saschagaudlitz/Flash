@@ -1,8 +1,10 @@
 import argparse
 
 import mlflow
+from mlflow.entities import ViewType
 from pytorch_lightning import Trainer
 from pytorch_lightning.utilities.seed import seed_everything
+from tqdm import tqdm
 
 from genhack.dataset import StationsDataset
 from genhack.experiments import Experiment, experiments
@@ -62,22 +64,32 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
 
         trainer.fit(experiment, datamodule=datamodule)
 
-    result = experiment.test_step([datamodule.test_dataset[:][0].to(DEVICE)], 0)
-
+    result = experiment.test_step([x.to(DEVICE) for x in datamodule.test_dataset[:]], 0)
     return result
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', '-m', type=str, choices=['train', 'test'], default='train')
-    parser.add_argument('--config', '-c', dest="filename", metavar='FILE')
-    parser.add_argument('--run_id', '-r', type=str, default=None)
+    parser.add_argument('--mode', type=str, choices=['train', 'test'], default='train')
+    parser.add_argument('--config', dest="filename", metavar='FILE')
+    parser.add_argument('--experiment_id', type=str, default="0")
+    parser.add_argument('--run_id', type=str, default=None)
+    parser.add_argument('--all', action='store_true')
     args = parser.parse_args()
 
     assert not (args.mode == 'test' and args.filename is not None), "--config is invalid in `test` mode, it's retrieved from mlflow."
     assert not (args.mode == 'train' and args.run_id is not None), "--run_id is invalid in `train` mode, it's generated automatically."
 
-    with mlflow.start_run(run_id=args.run_id) as active_run:
-        filename = args.filename if args.mode == 'train' else mlflow.get_artifact_uri(artifact_path='config.yaml')
-        config = get_config(filename)
-        run(config, mode=args.mode)
+    if args.mode == 'test' and args.all:
+        mlflow.set_experiment(experiment_id=args.experiment_id)
+        finished_runs = mlflow.search_runs(run_view_type=ViewType.ACTIVE_ONLY, filter_string="attribute.status = 'FINISHED'")
+        for run_id in tqdm(finished_runs['run_id'].values):
+            with mlflow.start_run(run_id=run_id) as active_run:
+                filename = args.filename if args.mode == 'train' else mlflow.get_artifact_uri(artifact_path='config.yaml')
+                config = get_config(filename)
+                run(config, mode=args.mode)
+    else:
+        with mlflow.start_run(run_id=args.run_id) as active_run:
+            filename = args.filename if args.mode == 'train' else mlflow.get_artifact_uri(artifact_path='config.yaml')
+            config = get_config(filename)
+            run(config, mode=args.mode)

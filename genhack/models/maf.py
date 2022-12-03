@@ -5,7 +5,7 @@ https://pytorch-lightning.readthedocs.io/en/stable/notebooks/course_UvA-DL/09-no
 from nflows.transforms import MaskedAffineAutoregressiveTransform, CompositeTransform, AffineCouplingTransform
 from nflows.transforms.permutations import ReversePermutation, RandomPermutation
 from nflows.distributions import StandardNormal
-from nflows.flows import Flow
+from nflows.flows import Flow, MaskedAutoregressiveFlow
 from torch import nn, optim
 import torch
 
@@ -96,9 +96,13 @@ class MAF(nn.Module):
         inputs, time = inputs
         return inputs, time
 
-    def sample(self, noise):
+    def sample(self, noise, time):
         samples, _ = self.flow._transform.inverse(noise)
-        return samples
+        return torch.squeeze(samples)
+        # intercept = torch.tensor([-0.3, -0.27, -0.41, -0.39, -0.45, -0.68])
+        # trend = 1.2 * torch.tensor([0.56, 0.46, 0.83, 0.78, 0.89, 1.36])
+        # samples, _ = self.flow._transform.inverse(noise)
+        # return intercept[None, :] + time[:, None] * trend[None, :] + torch.squeeze(samples)
 
     def loss(self, *args, **kwargs):
         inputs, time = args
