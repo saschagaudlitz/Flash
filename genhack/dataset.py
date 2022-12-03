@@ -38,9 +38,9 @@ class StationsDataset(LightningDataModule):
             train_test_split(X_train_val, date_train_val, time_train_val, test_size=val_split_size, shuffle=train_val_shuffle)
 
         # detrend
-        intercept = torch.tensor([-0.3, -0.27, -0.41, -0.39, -0.45, -0.68])
-        trend = torch.tensor([0.56, 0.46, 0.83, 0.78, 0.89, 1.36])
-        X_train = X_train - intercept[None, :] - time_train[:, None] * trend[None, :]
+        # intercept = torch.tensor([-0.3, -0.27, -0.41, -0.39, -0.45, -0.68])
+        # trend = torch.tensor([0.56, 0.46, 0.83, 0.78, 0.89, 1.36])
+        # X_train = X_train - intercept[None, :] - time_train[:, None] * trend[None, :]
 
         self.train_start_date = date_train.min()
         self.train_end_date = date_train.max()
@@ -49,7 +49,7 @@ class StationsDataset(LightningDataModule):
         self.test_start_date = date_test.min()
         self.test_end_date = date_test.max()
 
-        self.train_dataset = TensorDataset(X_train, time_train)
+        self.train_dataset = TensorDataset(X_train, time_train / time_train.max())
         self.val_dataset = TensorDataset(X_val)
         self.test_dataset = TensorDataset(X_test)
 

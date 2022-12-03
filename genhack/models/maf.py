@@ -1,11 +1,14 @@
 """
 https://pytorch-lightning.readthedocs.io/en/stable/notebooks/course_UvA-DL/09-normalizing-flows.html
 """
+import math
 
 from nflows.flows import MaskedAutoregressiveFlow
 from scipy.stats import norm
 from torch import nn
 import torch
+
+from genhack.utils import DEVICE
 
 
 class PowerLawWeights(nn.Module):
@@ -46,7 +49,7 @@ class LearnableWeights(nn.Module):
 
     def forward(self, input):
         dt = 1 / self.pts
-        normalize = self.model(torch.arange(0, 1, dt)[:, None]).sum() * dt
+        normalize = self.model(torch.arange(0, 1, dt, device=DEVICE)[:, None]).sum() * dt
         return self.model(input[:, None]).reshape(-1) / normalize
 
 
@@ -58,7 +61,7 @@ weight_models = {
 
 class MAF(nn.Module):
 
-    def __init__(self, trend_factor, n_layers, n_dim, n_latent_dim, n_hidden_features, n_blocks, dropout_probability=0.0, use_batch_norm=False, use_random_permutations=False, use_random_masks=False, weights='LearnedWeights', weights_kwargs=None, *args, **kwargs):
+    def __init__(self, trend_factor, n_layers, n_dim, n_latent_dim, n_hidden_features, n_blocks, dropout_probability=0.0, use_residual_blocks=True, use_batch_norm=False, use_random_permutations=False, use_random_masks=False, weights='LearnedWeights', weights_kwargs=None, *args, **kwargs):
         """Note that you can disable weighting by using PowerLawWeights with c = 0."""
         super().__init__()
         self.trend_factor = trend_factor
@@ -68,6 +71,7 @@ class MAF(nn.Module):
         self.n_hidden_features = n_hidden_features
         self.n_blocks = n_blocks
         self.use_batch_norm = use_batch_norm
+        self.use_residual_blocks = use_residual_blocks
         self.use_random_permutations = use_random_permutations
         self.use_random_masks = use_random_masks
         self.dropout_probability = dropout_probability
@@ -77,6 +81,7 @@ class MAF(nn.Module):
                                              num_layers=self.n_layers,
                                              hidden_features=self.n_hidden_features,
                                              num_blocks_per_layer=self.n_blocks,
+                                             use_residual_blocks=self.use_residual_blocks,
                                              use_random_permutations=self.use_random_permutations,
                                              use_random_masks=self.use_random_masks,
                                              dropout_probability=self.dropout_probability,
@@ -91,7 +96,8 @@ class MAF(nn.Module):
 
     def sample(self, noise, t_min, t_max):
         # noise and time samples
-        time = t_min + (t_max - t_min) * norm.cdf(noise[:, 6])
+        norm_cdf = lambda x: 0.5 * (1 + torch.erf(x / math.sqrt(2)))
+        time = t_min + (t_max - t_min) * norm_cdf(noise[:, 6])
         noise = noise[:, :6]
 
         # entrend
