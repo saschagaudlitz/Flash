@@ -1,4 +1,3 @@
-import argparse
 import mlflow
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -85,14 +84,14 @@ def plot_hist2d(X, X_true=None):
     return fig
 
 
-def evaluate_model(model, prefix, X_test, time, n_test_samples, n_latent_dim, train_start_date, train_end_date):
+def evaluate_model(model, prefix, X_test, t_min, t_max, n_test_samples, n_latent_dim, train_start_date, train_end_date):
     kendall_arr, ad_ind_arr, ad_mean_arr = [], [], []
     X_test_pred = None
 
     # calculate averaged metrics
 
     for _ in range(n_test_samples):
-        X_test_pred = model.sample(torch.randn((len(X_test), n_latent_dim), device=DEVICE), time)
+        X_test_pred = model.sample(torch.randn((len(X_test), n_latent_dim), device=DEVICE), t_min=t_min, t_max=t_max)
         kendall = kendall_absolute_error(X_test, X_test_pred)
         ad_ind, ad_mean = anderson_darling(X_test, X_test_pred)
 

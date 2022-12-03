@@ -32,8 +32,7 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
     experiment = cls(model, config.get('experiment_params', None),
                      best_ad_mean_model_uri=best_ad_mean_model_uri,
                      best_kendall_model_uri=best_kendall_model_uri,
-                     train_start_date=datamodule.train_start_date,
-                     train_end_date=datamodule.train_end_date)
+                     datamodule=datamodule)
 
     # training
 
@@ -54,7 +53,8 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
         # early_stopping = EarlyStopping(monitor='val_kendall', patience=10)
         # callbacks += [early_stopping]
 
-        trainer = Trainer(callbacks=callbacks, enable_progress_bar=enable_progress_bar, **config['trainer_params'])
+        # num_sanity_val_steps = 0 is important, otherwise resets metrics!
+        trainer = Trainer(callbacks=callbacks, enable_progress_bar=enable_progress_bar, num_sanity_val_steps=0, **config['trainer_params'])
 
         mlflow.pytorch.autolog(log_models=False)
 

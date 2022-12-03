@@ -2,11 +2,9 @@
 https://pytorch-lightning.readthedocs.io/en/stable/notebooks/course_UvA-DL/09-normalizing-flows.html
 """
 
-from nflows.transforms import MaskedAffineAutoregressiveTransform, CompositeTransform, AffineCouplingTransform
-from nflows.transforms.permutations import ReversePermutation, RandomPermutation
-from nflows.distributions import StandardNormal
-from nflows.flows import Flow, MaskedAutoregressiveFlow
-from torch import nn, optim
+from nflows.flows import MaskedAutoregressiveFlow
+from scipy.stats import norm
+from torch import nn
 import torch
 
 
@@ -60,34 +58,29 @@ weight_models = {
 
 class MAF(nn.Module):
 
-    def __init__(self, n_layers, n_dim, n_latent_dim, n_hidden_features, dropout_probability=0.0, use_batch_norm=False, weights='LearnedWeights', weights_kwargs=None, *args, **kwargs):
+    def __init__(self, trend_factor, n_layers, n_dim, n_latent_dim, n_hidden_features, n_blocks, dropout_probability=0.0, use_batch_norm=False, use_random_permutations=False, use_random_masks=False, weights='LearnedWeights', weights_kwargs=None, *args, **kwargs):
         """Note that you can disable weighting by using PowerLawWeights with c = 0."""
         super().__init__()
+        self.trend_factor = trend_factor
         self.n_layers = n_layers
         self.n_dim = n_dim
         self.n_latent_dim = n_latent_dim
         self.n_hidden_features = n_hidden_features
+        self.n_blocks = n_blocks
         self.use_batch_norm = use_batch_norm
+        self.use_random_permutations = use_random_permutations
+        self.use_random_masks = use_random_masks
         self.dropout_probability = dropout_probability
 
-        transforms = []
-
-        for _ in range(self.n_layers):
-            transforms.append(ReversePermutation(features=self.n_dim))
-            transforms.append(MaskedAffineAutoregressiveTransform(
-                features=self.n_dim,
-                hidden_features=self.n_hidden_features,
-                use_batch_norm=self.use_batch_norm,
-                dropout_probability=self.dropout_probability,
-            ))
-
-        transform = CompositeTransform(transforms)
-
-        # Define a base distribution.
-        base_distribution = StandardNormal(shape=[self.n_dim])
-
-        # Combine into a flow. (For normalizing flows, see arXiv:1912.02762)
-        self.flow = Flow(transform=transform, distribution=base_distribution)
+        # initialize flow
+        self.flow = MaskedAutoregressiveFlow(features=self.n_dim,
+                                             num_layers=self.n_layers,
+                                             hidden_features=self.n_hidden_features,
+                                             num_blocks_per_layer=self.n_blocks,
+                                             use_random_permutations=self.use_random_permutations,
+                                             use_random_masks=self.use_random_masks,
+                                             dropout_probability=self.dropout_probability,
+                                             batch_norm_within_layers=self.use_batch_norm)
 
         # initialize weights
         self.weights = weight_models[weights](**weights_kwargs)
@@ -96,13 +89,16 @@ class MAF(nn.Module):
         inputs, time = inputs
         return inputs, time
 
-    def sample(self, noise, time):
+    def sample(self, noise, t_min, t_max):
+        # noise and time samples
+        time = t_min + (t_max - t_min) * norm.cdf(noise[:, 6])
+        noise = noise[:, :6]
+
+        # entrend
+        intercept = torch.tensor([-0.3, -0.27, -0.41, -0.39, -0.45, -0.68])
+        trend = self.trend_factor * torch.tensor([0.56, 0.46, 0.83, 0.78, 0.89, 1.36])
         samples, _ = self.flow._transform.inverse(noise)
-        return torch.squeeze(samples)
-        # intercept = torch.tensor([-0.3, -0.27, -0.41, -0.39, -0.45, -0.68])
-        # trend = 1.2 * torch.tensor([0.56, 0.46, 0.83, 0.78, 0.89, 1.36])
-        # samples, _ = self.flow._transform.inverse(noise)
-        # return intercept[None, :] + time[:, None] * trend[None, :] + torch.squeeze(samples)
+        return intercept[None, :] + time[:, None] * trend[None, :] + torch.squeeze(samples)
 
     def loss(self, *args, **kwargs):
         inputs, time = args
