@@ -1,6 +1,5 @@
 from pytorch_lightning import LightningDataModule
 import pandas as pd
-from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 import torch
 import numpy as np
@@ -16,9 +15,11 @@ collate_fn = lambda x: tuple(y.to(DEVICE) for y in default_collate(x))
 
 class StationsDataset(LightningDataModule):
 
-    def __init__(self, batch_size, val_split_size=0.2, test_split_size=0.2, train_val_shuffle=False, *args, **kwargs):
+    def __init__(self, batch_size, start_date, end_date, val_split_size=0.2, test_split_size=0.2, train_val_shuffle=False, *args, **kwargs):
         super().__init__()
         self.batch_size = batch_size
+        self.start_date = start_date
+        self.end_date = end_date
         self.val_split_size = val_split_size
         self.test_split_size = test_split_size
         self.train_val_shuffle = train_val_shuffle
@@ -27,6 +28,7 @@ class StationsDataset(LightningDataModule):
         self.df = pd.read_csv(filename)
         self.df['dates'] = pd.to_datetime(self.df['dates'])
         self.df = self.df.set_index('dates')[COLS]
+        self.df = self.df[(self.df.index >= str(start_date)) & (self.df.index <= str(end_date))]
         X = torch.tensor(self.df.to_numpy().astype(np.float32))
 
         # train/val/test split

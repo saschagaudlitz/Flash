@@ -5,6 +5,7 @@ import pandas as pd
 import torch
 import yaml
 from PIL import Image
+import collections.abc
 
 COLS = ['s1', 's2', 's3', 's4', 's5', 's6']
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -82,6 +83,15 @@ def plot_hist2d(X, X_true=None):
         ax[0][1].set_title(f"Kendall = {kendall:.6f}")
 
     return fig
+
+
+def deep_update(d, u):
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = deep_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
 
 
 def evaluate_model(model, prefix, X_test, t_min, t_max, n_test_samples, n_latent_dim, train_start_date, train_end_date):

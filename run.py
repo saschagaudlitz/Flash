@@ -49,10 +49,8 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
     datamodule = StationsDataset(**config['data_params'])
 
     # initialize ts model
-    ts_model = None
-    if 'ts_model_params' in config['model_params']:
-        ts_model_params = config['model_params']['ts_model_params']
-        ts_model = ts_models[ts_model_params['model_name']](datamodule.df, **ts_model_params['kwargs'])
+    ts_model_params = config['model_params']['ts_model_params']
+    ts_model = ts_models[ts_model_params['model_name']](datamodule.df, **ts_model_params['kwargs'])
 
     model = models[config['model_params']['model_name']](**config['model_params'], datamodule=datamodule, ts_model=ts_model)
 
@@ -75,6 +73,8 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
 
     if mode == 'train':
 
+        print(mlflow.active_run().info.run_id)
+
         mlflow.log_dict(config, 'config.yaml')
 
         mlflow.log_param('train_start_date', datamodule.train_start_date)
@@ -88,6 +88,8 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
 
         if ts_model is not None:
             ts_model.fit()
+            # @todo generalize, this works only for linear trend model
+            mlflow.log_dict({'coef': ts_model.coef, 'intercept': ts_model.intercept}, 'trend_model.yaml')
 
         # train generative model
 

@@ -1,66 +1,68 @@
 import mlflow
 from ray import tune, air
 from ray.tune.integration.mlflow import mlflow_mixin
-from ray.tune.search import ConcurrencyLimiter
-from ray.tune.search.hyperopt import HyperOptSearch
+from ray.tune.search import BasicVariantGenerator
 import os
 
 from genhack.utils import get_config
-from run import active_run
+from run import run
 
 param_space = {
-    'model_params.n_blocks': tune.choice([3, 5, 10]),
-    'model_params.n_layers': tune.choice([5, 7, 10]),
-    'model_params.n_hidden_features': tune.choice([8, 16, 32, 64]),
-    'model_params.dropout_probability': tune.choice([0., 0.25, 0.5, 0.75]),
-    'model_params.use_batch_norm': tune.choice([True, False]),
-    'experiment_params.learning_rate': tune.choice([0.001, 0.0001]),
+    "period": tune.grid_search([
+        ("1982-01-01", "1999-12-31"),
+        ("1986-01-01", "2003-12-31"),
+        ("1990-01-01", "2007-12-31"),
+    ]),
+    "model_params.weights_model_params": tune.grid_search([
+        {"model_name": "LearnableWeights", "kwargs": {"n_hidden_units": 100}},
+        {"model_name": "PowerLawWeights", "kwargs": {"a": 1., "b": 1., "c": 0.}},
+        {"model_name": "PowerLawWeights", "kwargs": {"a": -0.9, "b": 1., "c": 1.}},
+        {"model_name": "PowerLawWeights", "kwargs": {"a": -0.9, "b": 1., "c": 2.}},
+    ]),
+    "model_params.ts_model_params": tune.grid_search([
+        {"model_name": "TrendModel", "kwargs": {"trend_factor": 0.5}},
+        {"model_name": "TrendModel", "kwargs": {"trend_factor": 1.}},
+        {"model_name": "TrendModel", "kwargs": {"trend_factor": 1.2}},
+        {"model_name": "TrendModel", "kwargs": {"trend_factor": 1.5}},
+    ]),
+    "data_params.val_split_size": tune.grid_search([0.05, 0.15, 0.25]),
+    "data_params.test_split_size": tune.grid_search([0.05, 0.15, 0.25]),
+    "data_params.train_val_shuffle": tune.grid_search([True, False]),
     "mlflow": {
-        "experiment_name": "Tuning MAF",
+        "experiment_id": 0,
         "tracking_uri": mlflow.get_tracking_uri(),
     },
 }
 
-initial_params = [
-    {
-        'model_params.n_blocks': 5,
-        'model_params.n_layers': 5,
-        'model_params.n_hidden_features': 32,
-        'model_params.dropout_probability': 0.0,
-        'model_params.use_batch_norm': False,
-        'experiment_params.learning_rate': 0.001,
-    }
-]
-
 
 @mlflow_mixin
 def objective(args):
+
     filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'configs/maf.yaml')
     config = get_config(filename)
 
     for key, value in args.items():
-        if key == 'mlflow':
+        if key == 'mlflow' or key == "period":
             continue
         first, second = key.split('.')
         config[first][second] = value
 
-    return active_run(config, enable_progress_bar=False)
+    config['data_params']['start_date'] = args['period'][0]
+    config['data_params']['end_date'] = args['period'][1]
+
+    return run(config, enable_progress_bar=False)
 
 
 if __name__ == '__main__':
-    algo = HyperOptSearch(points_to_evaluate=initial_params)
-    algo = ConcurrencyLimiter(algo, max_concurrent=16)
 
     tuner = tune.Tuner(
         objective,
         run_config=air.RunConfig(name="mlflow"),
-        tune_config=tune.TuneConfig(
-            metric="test_ad_mean",
-            mode="min",
-            search_alg=algo,
-            num_samples=100,
-        ),
         param_space=param_space,
+        tune_config=tune.TuneConfig(
+            search_alg=BasicVariantGenerator(max_concurrent=72),
+            num_samples=1000,
+        ),
     )
 
     results = tuner.fit()

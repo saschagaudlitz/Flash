@@ -113,11 +113,15 @@ class MAF(nn.Module):
         time = t_min + (t_max - t_min) * norm_cdf(noise[:, 6])
         noise = noise[:, :6]
 
+        samples = torch.squeeze(self.flow._transform.inverse(noise)[0])
+
         # entrend
         # @todo currently we have ts_model + generative_model
         # one should consider conditional models too
-        samples, _ = self.flow._transform.inverse(noise)
-        return self.ts_model(time) + torch.squeeze(samples)
+        if self.ts_model is not None:
+            samples += self.ts_model(time)
+
+        return samples
 
     def loss(self, *args, **kwargs):
         inputs, time = args
