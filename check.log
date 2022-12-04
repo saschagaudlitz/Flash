@@ -1,8 +1,8 @@
-2022-11-26 21:10:48,686:DEBUG: matplotlib data path: /usr/local/lib/python3.8/site-packages/matplotlib/mpl-data
-2022-11-26 21:10:48,688:DEBUG: CONFIGDIR=/root/.config/matplotlib
-2022-11-26 21:10:48,689:DEBUG: interactive is False
-2022-11-26 21:10:48,689:DEBUG: platform is linux
-2022-11-26 21:10:48,744:DEBUG: CACHEDIR=/root/.cache/matplotlib
-2022-11-26 21:10:48,744:DEBUG: font search path [PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/ttf'), PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/afm'), PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/pdfcorefonts')]
-2022-11-26 21:10:48,846:INFO: generated new fontManager
-2022-11-26 21:10:49,100:DEBUG: Successful simulation
+2022-12-04 16:39:24,463:DEBUG: matplotlib data path: /usr/local/lib/python3.8/site-packages/matplotlib/mpl-data
+2022-12-04 16:39:24,465:DEBUG: CONFIGDIR=/root/.config/matplotlib
+2022-12-04 16:39:24,465:DEBUG: interactive is False
+2022-12-04 16:39:24,465:DEBUG: platform is linux
+2022-12-04 16:39:24,520:DEBUG: CACHEDIR=/root/.cache/matplotlib
+2022-12-04 16:39:24,521:DEBUG: font search path [PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/ttf'), PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/afm'), PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/pdfcorefonts')]
+2022-12-04 16:39:24,627:INFO: generated new fontManager
+2022-12-04 16:39:25,107:DEBUG: Successful simulation
