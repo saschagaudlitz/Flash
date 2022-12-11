@@ -99,8 +99,9 @@ if __name__ == '__main__':
     assert not (args.mode == 'test' and args.filename is not None), "--config is invalid in `test` mode, it's retrieved from mlflow."
     assert not (args.mode == 'train' and args.run_id is not None), "--run_id is invalid in `train` mode, it's generated automatically."
 
+    mlflow.set_experiment(experiment_id=args.experiment_id)
+
     if args.mode == 'test' and args.all:
-        mlflow.set_experiment(experiment_id=args.experiment_id)
         finished_runs = mlflow.search_runs(run_view_type=ViewType.ACTIVE_ONLY, filter_string="attribute.status = 'FINISHED'")
         for run_id in tqdm(finished_runs['run_id'].values):
             with mlflow.start_run(run_id=run_id) as active_run:

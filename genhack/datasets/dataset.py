@@ -16,7 +16,7 @@ collate_fn = lambda x: tuple(y.to(DEVICE) for y in default_collate(x))
 
 class PermutedTensorDataset(TensorDataset):
 
-    def __init__(self, *tensors: Tensor, permute_coords=False):
+    def __init__(self, *tensors: Tensor, permute_coords):
         super().__init__(*tensors)
         self.permute_coords = permute_coords
 
@@ -37,7 +37,7 @@ class PermutedTensorDataset(TensorDataset):
 
 class StationsDataset(LightningDataModule):
 
-    def __init__(self, batch_size, start_train_date, end_train_date, start_test_date, end_test_date, train_dims, test_dims, val_split_size=0.2, train_val_shuffle=False, permute_coords=False, *args, **kwargs):
+    def __init__(self, batch_size, start_train_date, end_train_date, start_test_date, end_test_date, train_dims, test_dims, val_split_size=0.2, train_val_shuffle=False, train_permute_coords=True, *args, **kwargs):
         super().__init__()
         self.batch_size = batch_size
         self.start_train_date = start_train_date
@@ -48,7 +48,7 @@ class StationsDataset(LightningDataModule):
         self.test_dims = test_dims
         self.val_split_size = val_split_size
         self.train_val_shuffle = train_val_shuffle
-        self.permute_coords = permute_coords
+        self.train_permute_coords = train_permute_coords
 
         assert len(train_dims) >= len(test_dims), "train_dims must be larger than test_dims"
 
@@ -101,7 +101,7 @@ class StationsDataset(LightningDataModule):
         self.test_start_date = date_test.min()
         self.test_end_date = date_test.max()
 
-        self.train_dataset = PermutedTensorDataset(X_train, positions_train, time_train, permute_coords=self.permute_coords)
+        self.train_dataset = PermutedTensorDataset(X_train, positions_train, time_train, permute_coords=self.train_permute_coords)
         self.val_dataset = TensorDataset(X_val, positions_val, time_val)
         self.test_dataset = TensorDataset(X_test, positions_test, time_test)
 

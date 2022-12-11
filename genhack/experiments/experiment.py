@@ -1,11 +1,12 @@
 import math
+
 import mlflow.pytorch
 import torch
 from torch import optim
 import pytorch_lightning as pl
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 
-from genhack.utils import calculate_ri, anderson_darling, log_hist2d, DEVICE, evaluate_model
+from genhack.utils import calculate_ri, anderson_darling, log_hist2d, DEVICE, evaluate_model, kendall_absolute_error
 
 
 class Experiment(pl.LightningModule):
@@ -22,12 +23,21 @@ class Experiment(pl.LightningModule):
         self.ri_true = None
         self.best_ad_mean = self.best_kendall = math.inf
 
+    def lr_scheduler_step(self, scheduler, optimizer_idx, metric):
+        super().lr_scheduler_step(scheduler, optimizer_idx, metric)
+        mlflow.log_metric(f'lr_{optimizer_idx}', scheduler.optimizer.param_groups[0]['lr'], step=self.current_epoch)
+
     def configure_optimizers(self):
         if len(list(self.model.parameters())) > 0:
             adam = optim.Adam(self.model.parameters(), lr=self.params['learning_rate'])
-            return adam
-            # scheduler = StepLR(adam, step_size=20, gamma=0.1)
-            # return [adam], [scheduler]
+            scheduler = ReduceLROnPlateau(adam, patience=self.params['patience'], factor=self.params['factor'], verbose=True)
+            return {
+                "optimizer": adam,
+                "lr_scheduler": {
+                    "scheduler": scheduler,
+                    "monitor": self.params['lr_scheduler_metric'],
+                },
+            }
 
     def training_step(self, batch, batch_idx, optimizer_idx=None):
         result = self.model(batch)
@@ -44,10 +54,7 @@ class Experiment(pl.LightningModule):
         n_val_dim = len(position) // 2
         position = torch.cat([position, torch.tensor([0] * 2 * max(self.model.n_dim - n_val_dim, 0)).float()])
 
-        # calculate Kendall ri for the validation set only once, because this operation takes a couple of seconds
-        if self.ri_true is None:
-            self.ri_true = calculate_ri(X_val)
-
+        # sample
         X_val_pred = self.model.sample(torch.randn((len(X_val), self.model.n_latent_dim), device=DEVICE), position=position, time=time)
 
         # cut-off dummy positions
@@ -57,8 +64,7 @@ class Experiment(pl.LightningModule):
         ad_ind, ad_mean = anderson_darling(X_val, X_val_pred)
 
         # calculate Kendall explicitly to avoid the evaluation of ri_true at the end of every epoch
-        ri_pred = calculate_ri(X_val_pred)
-        kendall = torch.abs(ri_pred - self.ri_true).mean()
+        kendall = kendall_absolute_error(X_val, X_val_pred)
 
         self.log_dict({'val_kendall': kendall, 'val_ad_mean': ad_mean})
 
