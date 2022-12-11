@@ -9,38 +9,10 @@ from sklearn.linear_model import LinearRegression
 from torch import nn
 from tqdm import tqdm
 
-from genhack.dataset import StationsDataset
+from genhack.datasets import StationsDataset
 from genhack.experiments import Experiment, experiments
-from genhack.models import models
+from genhack.models import models, ts_models, weights_models
 from genhack.utils import get_config, DEVICE
-
-
-class TrendModel(nn.Module):
-
-    def __init__(self, data, trend_factor=1.) -> None:
-        super().__init__()
-        self.data = data
-        self.trend_factor = trend_factor
-
-        self.coef = None
-        self.intercept = None
-
-    def forward(self, time):
-        return self.intercept[None, :] + self.trend_factor * self.coef[None, :] * time[:, None]
-
-    def fit(self):
-        lr_data = self.data.resample('Y').mean()
-        lr = LinearRegression()
-        xs = torch.linspace(0, 1, len(lr_data))[:, None]
-        reg = lr.fit(xs, lr_data)
-
-        self.coef = nn.Parameter(torch.tensor(reg.coef_.reshape(-1)), requires_grad=False)
-        self.intercept = nn.Parameter(torch.tensor(reg.intercept_.reshape(-1)), requires_grad=False)
-
-
-ts_models = {
-    'TrendModel': TrendModel,
-}
 
 
 def run(config, mode='train', enable_progress_bar=True, callbacks=None):
@@ -49,10 +21,20 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
     datamodule = StationsDataset(**config['data_params'])
 
     # initialize ts model
-    ts_model_params = config['model_params']['ts_model_params']
-    ts_model = ts_models[ts_model_params['model_name']](datamodule.df, **ts_model_params['kwargs'])
+    ts_model = None
+    if 'ts_model_params' in config['model_params']:
+        ts_model_params = config['model_params']['ts_model_params']
+        ts_model = ts_models[ts_model_params['model_name']](datamodule.df_train_val, **ts_model_params['kwargs'])
 
-    model = models[config['model_params']['model_name']](**config['model_params'], datamodule=datamodule, ts_model=ts_model)
+    # initialize weights model
+    weights_model = None
+    if 'weights_model_params' in config['model_params']:
+        weights_model_params = config['model_params']['weights_model_params']
+        weights_model = weights_models[weights_model_params['model_name']](**weights_model_params['kwargs'])
+
+    n_dim = len(config['data_params']['train_dims'])
+    n_condition_features = 2 * n_dim + 1
+    model = models[config['model_params']['model_name']](**config['model_params'], datamodule=datamodule, ts_model=ts_model, weights_model=weights_model, n_dim=n_dim, n_condition_features=n_condition_features)
 
     # initialize experiment
 
@@ -81,13 +63,6 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
         mlflow.log_param('val_end_date', datamodule.val_end_date)
         mlflow.log_param('test_start_date', datamodule.test_start_date)
         mlflow.log_param('test_end_date', datamodule.test_end_date)
-
-        # train ts model
-
-        if ts_model is not None:
-            ts_model.fit()
-            # @todo generalize, this works only for linear trend model
-            mlflow.log_dict({'coef': ts_model.coef, 'intercept': ts_model.intercept}, 'trend_model.yaml')
 
         # train generative model
 

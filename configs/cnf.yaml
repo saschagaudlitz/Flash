@@ -1,0 +1,32 @@
+model_params:
+  model_name: CNF
+  n_latent_dim: 6
+  n_layers: 4
+  n_hidden_features: 8
+  n_blocks: 5
+  dropout_probability: 0.0
+  use_batch_norm_within_layers: true
+  use_batch_norm_between_layers: true
+  use_residual_blocks: true
+  use_random_permutations: false
+  use_random_masks: false
+
+experiment_params:
+  learning_rate: 0.0001
+  manual_seed: 1337
+
+data_params:
+  # index from 0 to 5
+  train_dims: [0, 1, 2, 3, 4, 5]
+  test_dims: [0, 1, 2, 3, 4, 5]
+  start_train_date: 2000-01-01
+  end_train_date: 2016-12-31
+  start_test_date: 2008-01-01
+  end_test_date: 2016-12-31
+  val_split_size: 0.25
+  train_val_shuffle: true
+  permute_coords: true
+  batch_size: 32
+
+trainer_params:
+  max_epochs: 200

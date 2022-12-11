@@ -1,3 +1,5 @@
+from itertools import permutations
+
 import mlflow
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -6,6 +8,8 @@ import torch
 import yaml
 from PIL import Image
 import collections.abc
+
+from tqdm import tqdm
 
 COLS = ['s1', 's2', 's3', 's4', 's5', 's6']
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -62,7 +66,7 @@ def plot_hist2d(X, X_true=None):
 
     n_dim = X.shape[1]
 
-    fig, ax = plt.subplots(nrows=n_dim, ncols=n_dim, figsize=(3 * n_dim, 3 * n_dim - 2), constrained_layout=True)
+    fig, ax = plt.subplots(nrows=n_dim, ncols=n_dim, figsize=(3 * n_dim, max(3 * n_dim - 2, 3)), constrained_layout=True)
 
     for i in range(n_dim):
         for j in range(n_dim):
@@ -74,12 +78,13 @@ def plot_hist2d(X, X_true=None):
 
     for i in range(n_dim):
         data = pd.DataFrame(torch.vstack([X_true[:, i], X[:, i]]).T.detach().cpu().numpy()) if X_true is not None else X[:, i].detach().cpu().numpy()
-        sns.kdeplot(data=data, ax=ax[i][i])
+        subplt = ax if n_dim == 1 else ax[i][i]
+        sns.kdeplot(data=data, ax=subplt)
         if ad_ind is not None:
-            ax[i][i].set_title(f"AD = {ad_ind[i]:.4f}")
-            ax[i][i].get_legend().remove()
+            subplt.set_title(f"AD = {ad_ind[i]:.4f}")
+            subplt.get_legend().remove()
 
-    if kendall is not None:
+    if kendall is not None and n_dim > 1:
         ax[0][1].set_title(f"Kendall = {kendall:.6f}")
 
     return fig
@@ -94,16 +99,39 @@ def deep_update(d, u):
     return d
 
 
-def evaluate_model(model, prefix, X_test, t_min, t_max, n_test_samples, n_latent_dim, train_start_date, train_end_date):
+def evaluate_model(model, prefix, X_test, position, time, n_latent_dim, train_start_date, train_end_date):
+
+    n_dim = model.n_dim
+    n_test_dim = len(position) // 2
+
+    lat, lon = position[:len(position) // 2], position[:len(position) // 2]
+
     kendall_arr, ad_ind_arr, ad_mean_arr = [], [], []
     X_test_pred = None
 
     # calculate averaged metrics
+    # take every 8th permutation for speed
+    perms = list(permutations(range(X_test.shape[1])))[::8]
 
-    for _ in range(n_test_samples):
-        X_test_pred = model.sample(torch.randn((len(X_test), n_latent_dim), device=DEVICE), t_min=t_min, t_max=t_max)
-        kendall = kendall_absolute_error(X_test, X_test_pred)
-        ad_ind, ad_mean = anderson_darling(X_test, X_test_pred)
+    for perm in tqdm(perms):
+
+        perm = list(perm)
+
+        # permute position
+        perm_lat, perm_lon = lat[perm], lon[perm]
+        perm_position = torch.cat([perm_lat, perm_lon])
+
+        # add dummy position
+        perm_position = torch.cat([perm_position, torch.tensor([0] * 2 * max(n_dim - n_test_dim, 0)).float()])
+
+        # make predictions
+        X_test_pred = model.sample(torch.randn((len(X_test), n_latent_dim), device=DEVICE), position=perm_position, time=time)
+        # cut-off dummy positions
+        X_test_pred = X_test_pred[:, :n_test_dim]
+
+        # calculate metrics
+        kendall = kendall_absolute_error(X_test[:, perm], X_test_pred)
+        ad_ind, ad_mean = anderson_darling(X_test[:, perm], X_test_pred)
 
         kendall_arr.append(kendall)
         ad_ind_arr.append(ad_ind[None, :])

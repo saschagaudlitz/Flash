@@ -37,14 +37,23 @@ class Experiment(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
 
-        X_val = batch[0]
+        # note that position is the same for all inputs in the batch
+        X_val, position, time = batch[0], batch[1][0], batch[2]
+
+        # add dummy position
+        n_val_dim = len(position) // 2
+        position = torch.cat([position, torch.tensor([0] * 2 * max(self.model.n_dim - n_val_dim, 0)).float()])
 
         # calculate Kendall ri for the validation set only once, because this operation takes a couple of seconds
         if self.ri_true is None:
             self.ri_true = calculate_ri(X_val)
 
-        t_min, t_max = self.datamodule.t_val_min, self.datamodule.t_val_max
-        X_val_pred = self.model.sample(torch.randn((len(X_val), self.model.n_latent_dim), device=DEVICE), t_min=t_min, t_max=t_max)
+        X_val_pred = self.model.sample(torch.randn((len(X_val), self.model.n_latent_dim), device=DEVICE), position=position, time=time)
+
+        # cut-off dummy positions
+        X_val_pred = X_val_pred[:, :n_val_dim]
+
+        # calculate Anderson-Darling
         ad_ind, ad_mean = anderson_darling(X_val, X_val_pred)
 
         # calculate Kendall explicitly to avoid the evaluation of ri_true at the end of every epoch
@@ -53,7 +62,7 @@ class Experiment(pl.LightningModule):
 
         self.log_dict({'val_kendall': kendall, 'val_ad_mean': ad_mean})
 
-        for i in range(self.model.n_dim):
+        for i in range(n_val_dim):
             self.log(f'val_ad_{i + 1}', ad_ind[i])
 
         # save best model
@@ -68,25 +77,21 @@ class Experiment(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
 
-        X_test = batch[0]
+        print("Testing...")
+
+        # note that position is the same for all inputs in the batch
+        X_test, position, time = batch[0], batch[1][0], batch[2]
 
         log_hist2d('test_true', X_test)
-
-        # take bigger number of samples to reduce variance
-        # @todo put it somewhere else
-        N_TEST_SAMPLES = 10
-
-        t_min, t_max = self.datamodule.t_test_min, self.datamodule.t_test_max
 
         # log best AD
         best_model = mlflow.pytorch.load_model(self.best_ad_mean_model_uri)
         test_ba_kendall, test_ba_ad_ind, test_ba_ad_mean = \
             evaluate_model(best_model,
                            X_test=X_test,
+                           position=position,
                            prefix='ba',
-                           t_min=t_min,
-                           t_max=t_max,
-                           n_test_samples=N_TEST_SAMPLES,
+                           time=time,
                            n_latent_dim=self.model.n_latent_dim,
                            train_start_date=self.datamodule.train_start_date,
                            train_end_date=self.datamodule.train_end_date)
@@ -96,10 +101,9 @@ class Experiment(pl.LightningModule):
         test_bk_kendall, test_bk_ad_ind, test_bk_ad_mean = \
             evaluate_model(best_model,
                            X_test=X_test,
+                           position=position,
                            prefix='bk',
-                           t_min=t_min,
-                           t_max=t_max,
-                           n_test_samples=N_TEST_SAMPLES,
+                           time=time,
                            n_latent_dim=self.model.n_latent_dim,
                            train_start_date=self.datamodule.train_start_date,
                            train_end_date=self.datamodule.train_end_date)

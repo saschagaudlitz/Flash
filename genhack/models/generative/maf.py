@@ -7,56 +7,6 @@ from nflows.flows import MaskedAutoregressiveFlow
 from torch import nn
 import torch
 
-from genhack.utils import DEVICE
-
-
-class PowerLawWeights(nn.Module):
-
-    def __init__(self, a=0.9, b=0.1, c=1., *args, **kwargs):
-        """(a * t + b) ** c"""
-        super().__init__()
-        self.a = a
-        self.b = b
-        self.c = c
-
-    def forward(self, input):
-        return (self.a * input + self.b) ** self.c
-
-
-class LearnableWeights(nn.Module):
-
-    def __init__(self, pts=64, n_hidden_units=100, *args, **kwargs):
-        """
-        Learns non-linear function [0,1]->[0,inf] which integrates to one.
-
-        Parameters
-        ----------
-        pts : int
-            Integration points for calculation of the normalizing constant, so the weights integrate to one
-        n_hidden_units
-            Number of hidden units in the weight function
-        """
-        super().__init__()
-        self.pts = pts
-        self.n_hidden_units = n_hidden_units
-        self.model = nn.Sequential(
-            nn.Linear(1, n_hidden_units),
-            nn.LeakyReLU(),
-            nn.Linear(n_hidden_units, 1),
-            nn.Sigmoid(),
-        )
-
-    def forward(self, input):
-        dt = 1 / self.pts
-        normalize = self.model(torch.arange(0, 1, dt, device=DEVICE)[:, None]).sum() * dt
-        return self.model(input[:, None]).reshape(-1) / normalize
-
-
-weights_models = {
-    'LearnableWeights': LearnableWeights,
-    'PowerLawWeights': PowerLawWeights,
-}
-
 
 class MAF(nn.Module):
 
@@ -67,7 +17,7 @@ class MAF(nn.Module):
                  n_hidden_features,
                  n_blocks,
                  ts_model,
-                 weights_model_params,
+                 weights_model,
                  dropout_probability=0.0,
                  use_residual_blocks=True,
                  use_batch_norm=False,
@@ -83,6 +33,7 @@ class MAF(nn.Module):
         self.n_hidden_features = n_hidden_features
         self.n_blocks = n_blocks
         self.ts_model = ts_model
+        self.weights_model = weights_model
         self.use_batch_norm = use_batch_norm
         self.use_residual_blocks = use_residual_blocks
         self.use_random_permutations = use_random_permutations
@@ -100,12 +51,9 @@ class MAF(nn.Module):
                                              dropout_probability=self.dropout_probability,
                                              batch_norm_within_layers=self.use_batch_norm)
 
-        # initialize weights
-        self.weights = weights_models[weights_model_params['model_name']](**weights_model_params['kwargs'])
-
     def forward(self, inputs):
-        inputs, time = inputs
-        return inputs, time
+        sst, time = inputs
+        return sst, time
 
     # @todo this is hardcoded for now, remove t_min, t_max from sampling
     def sample(self, noise, t_min=0.75, t_max=1.):
@@ -125,6 +73,6 @@ class MAF(nn.Module):
         return samples
 
     def loss(self, *args, **kwargs):
-        inputs, time = args
-        weights = self.weights(time)
-        return {'loss': torch.mean(-weights * self.flow.log_prob(inputs=inputs))}
+        sst, time = args
+        weights = self.weights_model(time)
+        return {'loss': torch.mean(-weights * self.flow.log_prob(inputs=sst))}
