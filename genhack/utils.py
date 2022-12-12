@@ -90,48 +90,25 @@ def plot_hist2d(X, X_true=None):
     return fig
 
 
-def deep_update(d, u):
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = deep_update(d.get(k, {}), v)
-        else:
-            d[k] = v
-    return d
-
-
 def evaluate_model(model, prefix, X_test, position, time, n_latent_dim, train_start_date, train_end_date):
 
-    n_dim = model.n_dim
     n_test_dim = len(position) // 2
-
-    lat, lon = position[:len(position) // 2], position[:len(position) // 2]
 
     kendall_arr, ad_ind_arr, ad_mean_arr = [], [], []
     X_test_pred = None
 
-    # calculate averaged metrics
-    # take every 8th permutation for speed
-    perms = list(permutations(range(X_test.shape[1])))[::8]
+    N_TEST_SAMPLES = 10
 
-    for perm in tqdm(perms):
-
-        perm = list(perm)
-
-        # permute position
-        perm_lat, perm_lon = lat[perm], lon[perm]
-        perm_position = torch.cat([perm_lat, perm_lon])
-
-        # add dummy position
-        perm_position = torch.cat([perm_position, torch.tensor([0] * 2 * max(n_dim - n_test_dim, 0)).float()])
+    for _ in tqdm(range(N_TEST_SAMPLES)):
 
         # make predictions
-        X_test_pred = model.sample(torch.randn((len(X_test), n_latent_dim), device=DEVICE), position=perm_position, time=time)
+        X_test_pred = model.sample(torch.randn((len(X_test), n_latent_dim), device=DEVICE), position=position, time=time)
         # cut-off dummy positions
         X_test_pred = X_test_pred[:, :n_test_dim]
 
         # calculate metrics
-        kendall = kendall_absolute_error(X_test[:, perm], X_test_pred)
-        ad_ind, ad_mean = anderson_darling(X_test[:, perm], X_test_pred)
+        kendall = kendall_absolute_error(X_test, X_test_pred)
+        ad_ind, ad_mean = anderson_darling(X_test, X_test_pred)
 
         kendall_arr.append(kendall)
         ad_ind_arr.append(ad_ind[None, :])

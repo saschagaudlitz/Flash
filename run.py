@@ -69,11 +69,10 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
         if callbacks is None:
             callbacks = []
 
-        # early_stopping = EarlyStopping(monitor='val_kendall', patience=10)
-        # callbacks += [early_stopping]
-
         # num_sanity_val_steps = 0 is important, otherwise resets best metrics from inf to arbitrary value!
-        trainer = Trainer(callbacks=callbacks, enable_progress_bar=enable_progress_bar, num_sanity_val_steps=0, **config['trainer_params'])
+        num_sanity_val_steps = config['trainer_params'].get('num_sanity_val_steps', 0)
+        config['trainer_params'] = {k: v for k, v in config['trainer_params'].items() if k != 'num_sanity_val_steps'}
+        trainer = Trainer(callbacks=callbacks, enable_progress_bar=enable_progress_bar, num_sanity_val_steps=num_sanity_val_steps, **config['trainer_params'])
 
         mlflow.pytorch.autolog(log_models=False)
 

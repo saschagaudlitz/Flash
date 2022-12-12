@@ -37,7 +37,7 @@ class PermutedTensorDataset(TensorDataset):
 
 class StationsDataset(LightningDataModule):
 
-    def __init__(self, batch_size, start_train_date, end_train_date, start_test_date, end_test_date, train_dims, test_dims, val_split_size=0.2, train_val_shuffle=False, train_permute_coords=True, *args, **kwargs):
+    def __init__(self, batch_size, start_train_date, end_train_date, start_test_date, end_test_date, train_dims, test_dims, train_val_equal=False, val_split_size=0.2, train_val_shuffle=False, train_permute_coords=True, *args, **kwargs):
         super().__init__()
         self.batch_size = batch_size
         self.start_train_date = start_train_date
@@ -46,6 +46,7 @@ class StationsDataset(LightningDataModule):
         self.end_test_date = end_test_date
         self.train_dims = train_dims
         self.test_dims = test_dims
+        self.train_val_equal = train_val_equal
         self.val_split_size = val_split_size
         self.train_val_shuffle = train_val_shuffle
         self.train_permute_coords = train_permute_coords
@@ -79,11 +80,12 @@ class StationsDataset(LightningDataModule):
         positions_test = torch.tensor(position).repeat(len(X_test)).reshape(len(X_test), -1)
         positions_train_val = torch.tensor(position).repeat(len(X_train_val)).reshape(len(X_train_val), -1)
 
-        # train/val/test split
-        # test split is always deterministic (take last period)
-        # train/val split can be random (train/val mixed together)
-        X_train, X_val, date_train, date_val, time_train, time_val, positions_train, positions_val = \
-            train_test_split(X_train_val, date_train_val, time_train_val, positions_train_val, test_size=val_split_size, shuffle=train_val_shuffle)
+        if train_val_equal:
+            X_train, date_train, time_train, positions_train = X_train_val, date_train_val, time_train_val, positions_train_val
+            X_val, date_val, time_val, positions_val = X_train_val, date_train_val, time_train_val, positions_train_val
+        else:
+            X_train, X_val, date_train, date_val, time_train, time_val, positions_train, positions_val = \
+                train_test_split(X_train_val, date_train_val, time_train_val, positions_train_val, test_size=val_split_size, shuffle=train_val_shuffle)
 
         X_train = X_train[:, train_dims]
         positions_train = positions_train.reshape(-1, 2, 6)[:, :, train_dims].reshape(-1, 2 * len(train_dims))
