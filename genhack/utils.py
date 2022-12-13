@@ -159,22 +159,20 @@ def log_weights(label, date_range, weights):
     mlflow.log_image(image, fname)
 
 
-def plot_gpr_contourplot(model):
-    GRIDSIZE = 48
-    DAY = 0
-
+def plot_gpr_contourplot(model, day=0, gridsize=48):
+    """Plot contour plot of the GPR model.
+    """
     fig, ax = plt.subplots(figsize=(15, 5), ncols=3)
 
-    x = torch.linspace(-16, 16, GRIDSIZE)
-    y = torch.linspace(-16, 16, GRIDSIZE)
+    x = torch.linspace(-16, 16, gridsize)
+    y = torch.linspace(-16, 16, gridsize)
     X, Y = torch.meshgrid(x, y)
     posgrid = torch.cat([X.reshape(-1), Y.reshape(-1)])
-    noise = torch.randn((1, GRIDSIZE ** 2))
-    noise = torch.randn((1, GRIDSIZE ** 2))
+    noise = torch.randn((1, gridsize ** 2))
 
-    mean, std = model.gprs[DAY].predict(posgrid.reshape(2, -1).T, return_std=True)
-    mean = mean.reshape(GRIDSIZE, GRIDSIZE)
-    std = std.reshape(GRIDSIZE, GRIDSIZE)
+    mean, std = model.gprs[day].predict(posgrid.reshape(2, -1).T, return_std=True)
+    mean = mean.reshape(gridsize, gridsize)
+    std = std.reshape(gridsize, gridsize)
 
     ax[0].contourf(Y, X, mean, 200)
     ax[0].set_title('mean')
@@ -182,14 +180,14 @@ def plot_gpr_contourplot(model):
     ax[1].contourf(Y, X, std, 200)
     ax[1].set_title('std')
 
-    samples = model.sample(noise, posgrid).reshape(GRIDSIZE, GRIDSIZE)
+    samples = model.sample(noise, posgrid).reshape(gridsize, gridsize)
     ax[2].contourf(Y, X, samples, 200)
     ax[2].set_title('sample')
 
     cmap = plt.get_cmap('viridis')
     norm = matplotlib.colors.Normalize(vmin=mean.min(), vmax=mean.max())
 
-    for (lat, lon), sst in zip(model.gprs[DAY].X_train_, model.gprs[DAY].y_train_):
+    for (lat, lon), sst in zip(model.gprs[day].X_train_, model.gprs[day].y_train_):
         ax[2].scatter(lon, lat, color=cmap(norm(sst)), s=100, edgecolor='white', linewidth=1)
 
     return fig
