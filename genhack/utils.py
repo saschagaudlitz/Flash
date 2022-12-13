@@ -99,7 +99,7 @@ def evaluate_model(model, prefix, X_test, position, time, n_latent_dim, train_st
 
     N_TEST_SAMPLES = 10
 
-    for _ in tqdm(range(N_TEST_SAMPLES)):
+    for _ in range(N_TEST_SAMPLES):
 
         # make predictions
         X_test_pred = model.sample(torch.randn((len(X_test), n_latent_dim), device=DEVICE), position=position, time=time)

@@ -1,3 +1,5 @@
+from itertools import combinations
+
 import mlflow
 from ray import tune, air
 from ray.tune.integration.mlflow import mlflow_mixin
@@ -7,30 +9,12 @@ import os
 from genhack.utils import get_config
 from run import run
 
+train_dims = [list(x) for x in list(combinations(range(6), 3))]
+
 param_space = {
-    # "period": tune.grid_search([
-    #     ("1982-01-01", "1999-12-31"),
-    #     ("1986-01-01", "2003-12-31"),
-    #     ("1990-01-01", "2007-12-31"),
-    # ]),
-    # "model_params.weights_model_params": tune.grid_search([
-    #     {"model_name": "LearnableWeights", "kwargs": {"n_hidden_units": 100}},
-    #     {"model_name": "PowerLawWeights", "kwargs": {"a": 1., "b": 1., "c": 0.}},
-    #     {"model_name": "PowerLawWeights", "kwargs": {"a": -0.9, "b": 1., "c": 1.}},
-    #     {"model_name": "PowerLawWeights", "kwargs": {"a": -0.9, "b": 1., "c": 2.}},
-    # ]),
-    # "model_params.ts_model_params": tune.grid_search([
-    #     {"model_name": "TrendModel", "kwargs": {"trend_factor": 1.}},
-    #     {"model_name": "TrendModel", "kwargs": {"trend_factor": 1.2}},
-    #     {"model_name": "TrendModel", "kwargs": {"trend_factor": 1.5}},
-    # ]),
-    "data_params.test_split_size": tune.grid_search([0.05, 0.10, 0.15, 0.20, 0.25]),
-    # "data_params.train_val_shuffle": tune.grid_search([True, False]),
-    # "model_params.n_layers": tune.grid_search([4, 8, 12]),
-    # "model_params.n_hidden_features": tune.grid_search([8, 32, 64]),
-    # "model_params.n_blocks": tune.grid_search([5, 10, 15]),
+    "data_params.train_dims": tune.grid_search(train_dims),
     "mlflow": {
-        "experiment_id": "2",
+        "experiment_id": "11",
         "tracking_uri": mlflow.get_tracking_uri(),
     },
 }
@@ -39,7 +23,7 @@ param_space = {
 @mlflow_mixin
 def objective(args):
 
-    filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'configs/maf.yaml')
+    filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'configs/gpr.yaml')
     config = get_config(filename)
 
     for key, value in args.items():
@@ -48,23 +32,23 @@ def objective(args):
         first, second = key.split('.')
         config[first][second] = value
 
-    # config['data_params']['start_date'] = args['period'][0]
-    # config['data_params']['end_date'] = args['period'][1]
-
+    config['data_params']['test_dims'] = [x for x in range(6) if x not in config['data_params']['train_dims']]
     return run(config, enable_progress_bar=False)
 
 
 if __name__ == '__main__':
+
+    print(f"MLFlow tracking URI: {mlflow.get_tracking_uri()}")
+    print(f"MLFlow artifact URI: {mlflow.get_artifact_uri()}")
 
     tuner = tune.Tuner(
         objective,
         run_config=air.RunConfig(name="mlflow"),
         param_space=param_space,
         tune_config=tune.TuneConfig(
-            search_alg=BasicVariantGenerator(),
-            num_samples=1000,
+            search_alg=BasicVariantGenerator(constant_grid_search=True, max_concurrent=2),
+            num_samples=1,
         ),
     )
 
     results = tuner.fit()
-    print("Best hyperparameters found were: ", results.get_best_result().config)
