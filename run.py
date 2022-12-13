@@ -14,9 +14,7 @@ from genhack.experiments import Experiment, experiments
 from genhack.models import models, ts_models, weights_models
 from genhack.utils import get_config, DEVICE
 
-
 def run(config, mode='train', enable_progress_bar=True, callbacks=None):
-
     seed_everything(config['experiment_params']['manual_seed'], True)
     datamodule = StationsDataset(**config['data_params'])
 
@@ -52,9 +50,7 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
                      datamodule=datamodule)
 
     # training
-
     if mode == 'train':
-
         mlflow.log_dict(config, 'config.yaml')
 
         mlflow.log_param('train_start_date', datamodule.train_start_date)
