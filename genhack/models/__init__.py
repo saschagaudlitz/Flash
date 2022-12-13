@@ -5,6 +5,7 @@ from .generative.cdf import *
 from .generative.cnf import *
 from .generative.ldm import *
 from .generative.ttsgan import *
+from .generative.gpr import *
 from .ts import *
 from .weights import *
 
@@ -16,6 +17,7 @@ models = {
     'CNF': CNF,
     'LDM': LDM,
     'TTSGAN': TTSGAN,
+    'GPR': GPR,
 }
 
 ts_models = {
