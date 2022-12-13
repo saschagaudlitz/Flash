@@ -76,7 +76,8 @@ class StationsDataset(LightningDataModule):
         X_train_val = torch.tensor(self.df_train_val.to_numpy().astype(np.float32), device=DEVICE)
         X_test = torch.tensor(self.df_test.to_numpy().astype(np.float32), device=DEVICE)
 
-        position = np.load('data/position.npy').astype(np.float32)
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../data/position.npy')
+        position = np.load(filename).astype(np.float32)
         positions_test = torch.tensor(position).repeat(len(X_test)).reshape(len(X_test), -1)
         positions_train_val = torch.tensor(position).repeat(len(X_train_val)).reshape(len(X_train_val), -1)
 

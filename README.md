@@ -1,3 +1,4 @@
+
 # GenHack2 - Hackathon for Generative modeling : Simulation of global warming Sea Surface Temperatures ([website](https://www.polytechnique.edu/en/education/academic-and-research-departments/applied-mathematics-department-depmap/student-event/genhack-2-hackathon-generative-modelling))
 <img src="https://www.polytechnique.edu/sites/default/files/styles/contenu_detail/public/content/pages/images/2022-10/GenHack%20Challenge%20%28Banni%C3%A8re%20%28paysage%29%29%20%281250%20%C3%97%20350%20px%29_0.png?itok=K1AwTb_0">
 
@@ -28,9 +29,9 @@ We use MLFlow for model tracking.
 
     pip install mlflow
 
-Then start the MLFlow from the root directory of the project:
+Then start the MLFlow from the root directory of the project (better specify absolute path due to `ray`):
 
-    mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root=./mlruns
+    mlflow server --backend-store-uri=sqlite:///mlflow.db --default-artifact-root=/Users/konstantin/projects/Flash/mlruns
 
 Then you can access the server under `127.0.0.1:5000`.
 
@@ -50,9 +51,9 @@ You can also run the model from the notebook, see `train.ipynb` for the example.
 
 ## Hyperparameter tuning
 
-You need to install `hyperopt` and `ray` for hyperparameter tuning.
+You need to install `hyperopt` and `ray` for hyperparameter tuning. You also need to specify the `MLFLOW_TRACKING_URI` environment variable. Note that you always need to specift the absolute path to the database file.
 
-    pip install hyperopt ray
+    MLFLOW_TRACKING_URI=sqlite:////Users/konstantin/projects/Flash/mlflow.db pip install hyperopt ray
 
 See `hypertune.py` for example script.
 

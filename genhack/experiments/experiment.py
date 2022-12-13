@@ -50,15 +50,8 @@ class Experiment(pl.LightningModule):
         # note that position is the same for all inputs in the batch
         X_val, position, time = batch[0], batch[1][0], batch[2]
 
-        # add dummy position
-        n_val_dim = len(position) // 2
-        position = torch.cat([position, torch.tensor([0] * 2 * max(self.model.n_dim - n_val_dim, 0)).float()])
-
         # sample
         X_val_pred = self.model.sample(torch.randn((len(X_val), self.model.n_latent_dim), device=DEVICE), position=position, time=time)
-
-        # cut-off dummy positions
-        X_val_pred = X_val_pred[:, :n_val_dim]
 
         # calculate Anderson-Darling
         ad_ind, ad_mean = anderson_darling(X_val, X_val_pred)
@@ -68,7 +61,7 @@ class Experiment(pl.LightningModule):
 
         self.log_dict({'val_kendall': kendall, 'val_ad_mean': ad_mean})
 
-        for i in range(n_val_dim):
+        for i in range(X_val.shape[1]):
             self.log(f'val_ad_{i + 1}', ad_ind[i])
 
         # save best model

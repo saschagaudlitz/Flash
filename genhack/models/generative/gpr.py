@@ -1,6 +1,4 @@
-import random
 import numpy as np
-from sklearn.gaussian_process.kernels import ConstantKernel, RBF
 from torch import nn
 from sklearn.gaussian_process import GaussianProcessRegressor
 import torch
@@ -18,17 +16,16 @@ class GPR(nn.Module):
 
         for sst, position in zip(ssts, positions):
             gpr = GaussianProcessRegressor()
-            gpr.fit(position.reshape(2, 6).T, sst)
+            gpr.fit(position.reshape(2, -1).T, sst)
             self.gprs.append(gpr)
 
     def sample(self, noise, position, *args, **kwargs):
 
         y_samples = []
-        print(hash(self.grps[0]))
 
         for i, z in enumerate(noise):
             gpr = self.gprs[i]
-            y_mean, y_cov = gpr.predict(position.reshape(2, 6).T, return_cov=True)
+            y_mean, y_cov = gpr.predict(position.reshape(2, -1).T, return_cov=True)
             b = np.linalg.cholesky(y_cov)
             y_samples.append(y_mean + np.dot(b, z))
 
