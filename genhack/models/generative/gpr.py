@@ -16,7 +16,7 @@ class GPR(nn.Module):
         self.gprs = []
 
         for sst, position in zip(ssts, positions):
-            kernel = ConstantKernel(1.0, constant_value_bounds="fixed") * RBF(1.0, length_scale_bounds="fixed")
+            kernel = ConstantKernel(1., constant_value_bounds="fixed") * RBF(10., length_scale_bounds="fixed")
             gpr = GaussianProcessRegressor(kernel=kernel)
             gpr.fit(position.reshape(2, -1).T, sst)
             self.gprs.append(gpr)
@@ -28,6 +28,9 @@ class GPR(nn.Module):
         for i, z in enumerate(noise):
             gpr = self.gprs[i]
             y_mean, y_cov = gpr.predict(position.reshape(2, -1).T, return_cov=True)
+
+            # add small perturbation, since matrix often ends up being singular
+            y_cov += 1e-4 * np.eye(y_cov.shape[0])
             b = np.linalg.cholesky(y_cov)
             y_samples.append(y_mean + np.dot(b, z))
 

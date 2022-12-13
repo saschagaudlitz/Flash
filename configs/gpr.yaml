@@ -6,8 +6,8 @@ experiment_params:
 
 data_params:
   # index from 0 to 5
-  train_dims: [0, 1, 2, 3]
-  test_dims: [4, 5]
+  train_dims: [0, 1, 2, 3, 4, 5]
+  test_dims: [0, 1, 2, 3, 4, 5]
   start_train_date: 2008-01-01
   end_train_date: 2016-12-31
   start_test_date: 2008-01-01
