@@ -23,7 +23,6 @@ class PermutedTensorDataset(TensorDataset):
     def __getitem__(self, index):
         sst, position, time = super().__getitem__(index)
         n_dim = sst.shape[0]
-
         if self.permute_coords:
             idx = torch.randperm(n_dim)
             lat, lon = position[:n_dim], position[n_dim:]
@@ -31,12 +30,9 @@ class PermutedTensorDataset(TensorDataset):
             lat = lat[idx]
             lon = lon[idx]
             position = torch.cat([lat, lon])
-
         return sst, position, time
 
-
 class StationsDataset(LightningDataModule):
-
     def __init__(self, batch_size, start_train_date, end_train_date, start_test_date, end_test_date, train_dims, test_dims, train_val_equal=False, val_split_size=0.2, train_val_shuffle=False, train_permute_coords=True, *args, **kwargs):
         super().__init__()
         self.batch_size = batch_size
