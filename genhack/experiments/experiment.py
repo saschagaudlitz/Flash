@@ -6,7 +6,8 @@ from torch import optim
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 
-from genhack.utils import calculate_ri, anderson_darling, log_hist2d, DEVICE, evaluate_model, kendall_absolute_error
+from genhack.models import GPR
+from genhack.utils import calculate_ri, anderson_darling, log_hist2d, DEVICE, evaluate_model, kendall_absolute_error, log_gpr_contourplot
 
 
 class Experiment(pl.LightningModule):
@@ -106,6 +107,9 @@ class Experiment(pl.LightningModule):
                            n_latent_dim=self.model.n_latent_dim,
                            train_start_date=self.datamodule.train_start_date,
                            train_end_date=self.datamodule.train_end_date)
+
+        if isinstance(best_model, GPR):
+            log_gpr_contourplot(best_model)
 
         return {
             f'test_ba_kendall': test_ba_kendall,

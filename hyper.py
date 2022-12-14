@@ -4,7 +4,7 @@ from hyperopt import hp, fmin, tpe, space_eval
 from ray.tune.integration.mlflow import mlflow_mixin
 
 from genhack.utils import get_config
-from run import train
+from run import run
 
 space = {
     'model_params.n_blocks': hp.choice('n_blocks', np.arange(3, 5, 10)),
@@ -25,7 +25,7 @@ def objective(args):
         first, second = key.split('.')
         config[first][second] = value
 
-    result = train(config)
+    result = run(config)
     return float(result['test_ad_mean'])
 
 
