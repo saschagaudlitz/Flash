@@ -1,5 +1,6 @@
 model_params:
   model_name: GPR
+  gpr_kernels: [ConstantKernel, RBF]
 
 experiment_params:
   manual_seed: 1337
