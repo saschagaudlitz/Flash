@@ -109,7 +109,8 @@ class Experiment(pl.LightningModule):
                            train_end_date=self.datamodule.train_end_date)
 
         if isinstance(best_model, GPR):
-            log_gpr_contourplot(best_model)
+            for day in range(1):
+                log_gpr_contourplot(best_model, day=day)
 
         return {
             f'test_ba_kendall': test_ba_kendall,

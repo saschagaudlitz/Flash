@@ -164,24 +164,24 @@ def plot_gpr_contourplot(model, day=0, gridsize=48):
     """
     fig, ax = plt.subplots(figsize=(15, 5), ncols=3)
 
-    x = torch.linspace(-16, 16, gridsize)
-    y = torch.linspace(-16, 16, gridsize)
-    X, Y = torch.meshgrid(x, y)
-    posgrid = torch.cat([X.reshape(-1), Y.reshape(-1)])
+    lon = torch.linspace(-16, 16, gridsize)
+    lat = torch.linspace(-16, 16, gridsize)
+    LON, LAT = torch.meshgrid(lon, lat)
+    posgrid = torch.cat([LAT.reshape(-1), LON.reshape(-1)])
     noise = torch.randn((1, gridsize ** 2))
 
     mean, std = model.gprs[day].predict(posgrid.reshape(2, -1).T, return_std=True)
     mean = mean.reshape(gridsize, gridsize)
     std = std.reshape(gridsize, gridsize)
 
-    ax[0].contourf(Y, X, mean, 200)
+    ax[0].contourf(LON, LAT, mean, 200)
     ax[0].set_title('mean')
 
-    ax[1].contourf(Y, X, std, 200)
+    ax[1].contourf(LON, LAT, std, 200)
     ax[1].set_title('std')
 
-    samples = model.sample(noise, posgrid).reshape(gridsize, gridsize)
-    ax[2].contourf(Y, X, samples, 200)
+    samples = model.sample(noise, posgrid, start_day=day).reshape(gridsize, gridsize)
+    ax[2].contourf(LON, LAT, samples, 200)
     ax[2].set_title('sample')
 
     cmap = plt.get_cmap('viridis')
@@ -193,9 +193,9 @@ def plot_gpr_contourplot(model, day=0, gridsize=48):
     return fig
 
 
-def log_gpr_contourplot(model):
-    fname = f"figures/gpr_contourplot.png"
-    fig = plot_gpr_contourplot(model)
+def log_gpr_contourplot(model, day=0):
+    fname = f"figures/gpr_contourplot_{day}.png"
+    fig = plot_gpr_contourplot(model, day)
     fig.canvas.draw()
     image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
     mlflow.log_image(image, fname)

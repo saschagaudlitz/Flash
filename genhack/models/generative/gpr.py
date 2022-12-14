@@ -21,16 +21,16 @@ class GPR(nn.Module):
             gpr.fit(position.reshape(2, -1).T, sst)
             self.gprs.append(gpr)
 
-    def sample(self, noise, position, *args, **kwargs):
+    def sample(self, noise, position, start_day=0, *args, **kwargs):
 
         y_samples = []
 
-        for i, z in enumerate(noise):
+        for i, z in zip(range(start_day, start_day + len(noise)), noise):
             gpr = self.gprs[i]
             y_mean, y_cov = gpr.predict(position.reshape(2, -1).T, return_cov=True)
 
             # add small perturbation, since matrix often ends up being singular
-            y_cov += 1e-4 * np.eye(y_cov.shape[0])
+            y_cov += 1e-7 * np.eye(y_cov.shape[0])
             b = np.linalg.cholesky(y_cov)
             y_samples.append(y_mean + np.dot(b, z))
 
