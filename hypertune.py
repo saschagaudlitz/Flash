@@ -38,7 +38,7 @@ def objective(args):
             config['model_params']['kernel_params']['kernels'][1]['class_name'] = value[0]
             mlflow.log_param('kernel_type', value[0])
             if value[0] == 'Matern':
-                config['model_params']['kernel_params']['kernels'][1]['class_name']['kwargs']['nu'] = value[1]
+                config['model_params']['kernel_params']['kernels'][1]['kwargs']['nu'] = value[1]
                 mlflow.log_param('nu', value[1])
         elif key == 'constant_value':
             config['model_params']['kernel_params']['kernels'][0]['kwargs']['constant_value'] = value
