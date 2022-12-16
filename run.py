@@ -78,7 +78,9 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
 
         for name in 'model_params', 'experiment_params', 'data_params', 'trainer_params':
             if name in config:
-                mlflow.log_params(config[name])
+                for k, v in config[name].items():
+                    if not hasattr(v, '__len__'):
+                        mlflow.log_param(f'{name}.{k}', v)
 
         trainer.fit(experiment, datamodule=datamodule)
 
