@@ -1,5 +1,18 @@
 model_params:
   model_name: GPR
+  kernel_params:
+    formula: k1 * k2
+    kernels:
+      - name: k1
+        class_name: ConstantKernel
+        kwargs:
+          constant_value: 1.0
+          constant_value_bounds: fixed
+      - name: k2
+        class_name: RBF
+        kwargs:
+          length_scale: 1.0
+          length_scale_bounds: fixed
 
 experiment_params:
   manual_seed: 1337

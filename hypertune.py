@@ -9,12 +9,15 @@ import os
 from genhack.utils import get_config
 from run import run
 
-train_dims = [list(x) for x in list(combinations(range(6), 3))]
+train_dims = [list(x) for x in list(combinations(range(5), 4)) + list(combinations(range(5), 5))]
 
 param_space = {
-    "data_params.train_dims": tune.grid_search(train_dims),
+    "['data_params']['train_dims']": tune.grid_search(train_dims),
+    "kernel_type": tune.grid_search([('RBF', None), ('Matern', 1.), ('Matern', 2.), ('Matern', 3.), ('Matern', 5.), ('Matern', 7.), ('Matern', 10.), ('Matern', 15.), ('Matern', 20.)]),
+    "length_scale": tune.grid_search(range(1, 10)),
+    "constant_value": tune.grid_search([0.01, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0]),
     "mlflow": {
-        "experiment_id": "11",
+        "experiment_id": "12",
         "tracking_uri": mlflow.get_tracking_uri(),
     },
 }
@@ -29,8 +32,22 @@ def objective(args):
     for key, value in args.items():
         if key == 'mlflow' or key == "period":
             continue
-        first, second = key.split('.')
-        config[first][second] = value
+        elif key.startswith('['):
+            exec(f"config{key} = value")
+        elif key == 'kernel_type':
+            config['model_params']['kernel_params']['kernels'][1]['class_name'] = value[0]
+            mlflow.log_param('kernel_type', value[0])
+            if value[0] == 'Matern':
+                config['model_params']['kernel_params']['kernels'][1]['class_name']['kwargs']['nu'] = value[1]
+                mlflow.log_param('nu', value[1])
+        elif key == 'constant_value':
+            config['model_params']['kernel_params']['kernels'][0]['kwargs']['constant_value'] = value
+            mlflow.log_param('constant_value', value)
+        elif key == 'length_scale':
+            config['model_params']['kernel_params']['kernels'][1]['kwargs']['length_scale'] = value
+            mlflow.log_param('length_scale', value)
+        else:
+            raise ValueError(f"Unknown key {key}")
 
     config['data_params']['test_dims'] = [x for x in range(6) if x not in config['data_params']['train_dims']]
     return run(config, enable_progress_bar=False)
@@ -46,7 +63,7 @@ if __name__ == '__main__':
         run_config=air.RunConfig(name="mlflow"),
         param_space=param_space,
         tune_config=tune.TuneConfig(
-            search_alg=BasicVariantGenerator(constant_grid_search=True, max_concurrent=2),
+            search_alg=BasicVariantGenerator(constant_grid_search=True, max_concurrent=4),
             num_samples=1,
         ),
     )

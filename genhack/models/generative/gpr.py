@@ -1,13 +1,23 @@
-import numpy as np
-from sklearn.gaussian_process.kernels import ConstantKernel, RBF
 from torch import nn
 from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import *
 import torch
+
+
+def process_kernels_params(config):
+    formula = config['formula']
+    for kernel in config['kernels']:
+        wrap = lambda x: f'"{x}"' if isinstance(x, str) else str(x)
+        kwargs = ", ".join([f"{k}={wrap(v)}" for k, v in kernel['kwargs'].items()])
+        string = f"{kernel['class_name']}({kwargs})"
+        formula = formula.replace(kernel['name'], string)
+
+    return eval(formula)
 
 
 class GPR(nn.Module):
 
-    def __init__(self, datamodule, n_dim, n_latent_dim, *args, **kwargs) -> None:
+    def __init__(self, datamodule, n_dim, n_latent_dim, kernel_params, *args, **kwargs) -> None:
         super().__init__()
         self.n_dim = n_dim
         self.n_latent_dim = n_latent_dim
@@ -16,7 +26,7 @@ class GPR(nn.Module):
         self.gprs = []
 
         for sst, position in zip(ssts, positions):
-            kernel = ConstantKernel(1., constant_value_bounds="fixed") * RBF(10., length_scale_bounds="fixed")
+            kernel = process_kernels_params(kernel_params)
             gpr = GaussianProcessRegressor(kernel=kernel)
             gpr.fit(position.reshape(2, -1).T, sst)
             self.gprs.append(gpr)
