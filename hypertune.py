@@ -9,13 +9,13 @@ import os
 from genhack.utils import get_config
 from run import run
 
-train_dims = [list(x) for x in list(combinations(range(5), 4)) + list(combinations(range(5), 5))]
+train_dims = [list(x) for x in list(combinations(range(6), 4)) + list(combinations(range(6), 5))]
 
 param_space = {
     "['data_params']['train_dims']": tune.grid_search(train_dims),
-    "kernel_type": tune.grid_search([('RBF', None), ('Matern', 1.), ('Matern', 2.), ('Matern', 3.), ('Matern', 5.), ('Matern', 7.), ('Matern', 10.), ('Matern', 15.), ('Matern', 20.)]),
-    "length_scale": tune.grid_search(range(1, 10)),
-    "constant_value": tune.grid_search([0.01, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0]),
+    "kernel_type": tune.grid_search([('RBF', None), ('Matern', 2.), ('Matern', 4.), ('Matern', 7.), ('Matern', 10.), ('Matern', 20.)]),
+    "length_scale": tune.grid_search(range(3, 10, 2)),
+    "constant_value": tune.grid_search([0.01, 0.1, 0.4, 0.7, 1.0, 2.0]),
     "mlflow": {
         "experiment_id": "12",
         "tracking_uri": mlflow.get_tracking_uri(),
