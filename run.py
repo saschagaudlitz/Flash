@@ -76,10 +76,11 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
 
         mlflow.pytorch.autolog(log_models=False)
 
+        # if the param name is longer than 250 chars, there is going to be an error
         for name in 'model_params', 'experiment_params', 'data_params', 'trainer_params':
             if name in config:
                 for k, v in config[name].items():
-                    if not hasattr(v, '__len__'):
+                    if not isinstance(v, dict):
                         mlflow.log_param(f'{name}.{k}', v)
 
         trainer.fit(experiment, datamodule=datamodule)
