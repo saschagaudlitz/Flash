@@ -45,15 +45,3 @@ class GPR(nn.Module):
             y_samples.append(y_mean + np.dot(b, z))
 
         return torch.tensor(np.array(y_samples))
-
-    def mean_cov(self, noise, position, *args, **kwargs):
-
-        y_samples = []
-
-        for i, z in enumerate(noise):
-            gpr = self.gprs[i]
-            y_mean, y_cov = gpr.predict(position.reshape(2, -1).T, return_cov=True)
-            b = np.linalg.cholesky(y_cov)
-            y_samples.append(y_mean + np.dot(b, z))
-
-        return torch.tensor(np.array(y_samples))

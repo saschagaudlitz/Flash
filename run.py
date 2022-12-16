@@ -81,7 +81,7 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
             if name in config:
                 for k, v in config[name].items():
                     if not isinstance(v, dict):
-                        mlflow.log_param(f'{name}.{k}', v)
+                        mlflow.log_param(k, v)
 
         trainer.fit(experiment, datamodule=datamodule)
 

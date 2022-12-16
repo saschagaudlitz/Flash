@@ -1,4 +1,5 @@
 from itertools import combinations
+from hyperopt import hp
 
 import mlflow
 from ray import tune, air
@@ -6,16 +7,19 @@ from ray.tune.integration.mlflow import mlflow_mixin
 from ray.tune.search import BasicVariantGenerator
 import os
 
+from ray.tune.search.hyperopt import HyperOptSearch
+
 from genhack.utils import get_config
 from run import run
 
-train_dims = [list(x) for x in list(combinations(range(6), 4)) + list(combinations(range(6), 5))]
+train_dims = [list(x) for x in list(combinations(range(6), 5))]
 
 param_space = {
     "['data_params']['train_dims']": tune.grid_search(train_dims),
-    "kernel_type": tune.grid_search([('RBF', None), ('Matern', 2.), ('Matern', 4.), ('Matern', 7.), ('Matern', 10.), ('Matern', 20.)]),
-    "length_scale": tune.grid_search(range(3, 10, 2)),
-    "constant_value": tune.grid_search([0.01, 0.1, 0.4, 0.7, 1.0, 2.0]),
+    "kernel_type": hp.choice(['RBF', 'Matern']),
+    "length_scale": hp.uniform([3., 10.]),
+    "constant_value": hp.uniform([0.01, 2.0]),
+    "nu": hp.uniform([2., 20.]),
     "mlflow": {
         "experiment_id": "12",
         "tracking_uri": mlflow.get_tracking_uri(),
@@ -37,9 +41,10 @@ def objective(args):
         elif key == 'kernel_type':
             config['model_params']['kernel_params']['kernels'][1]['class_name'] = value[0]
             mlflow.log_param('kernel_type', value[0])
-            if value[0] == 'Matern':
-                config['model_params']['kernel_params']['kernels'][1]['kwargs']['nu'] = value[1]
-                mlflow.log_param('nu', value[1])
+        elif key == 'nu':
+            if config['model_params']['kernel_params']['kernels'][1]['class_name'] == 'Matern':
+                config['model_params']['kernel_params']['kernels'][1]['kwargs']['nu'] = value
+                mlflow.log_param('nu', value)
         elif key == 'constant_value':
             config['model_params']['kernel_params']['kernels'][0]['kwargs']['constant_value'] = value
             mlflow.log_param('constant_value', value)
@@ -57,6 +62,8 @@ if __name__ == '__main__':
 
     print(f"MLFlow tracking URI: {mlflow.get_tracking_uri()}")
     print(f"MLFlow artifact URI: {mlflow.get_artifact_uri()}")
+
+    hyperopt_search = HyperOptSearch(space, metric="mean_accuracy", mode="max")
 
     tuner = tune.Tuner(
         objective,
