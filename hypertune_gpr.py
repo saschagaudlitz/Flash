@@ -6,7 +6,7 @@ import torch
 import mlflow
 from ray import tune, air
 from ray.air.callbacks.mlflow import MLflowLoggerCallback
-from ray.tune.schedulers import ASHAScheduler, FIFOScheduler
+from ray.tune.schedulers import FIFOScheduler
 from ray.tune.search.bayesopt import BayesOptSearch
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import ConstantKernel, Matern, RBF
@@ -25,7 +25,7 @@ param_space = {
 }
 
 if cli_args.kernel == 'Matern':
-    param_space['nu'] = tune.uniform(1., 100.),
+    param_space['nu'] = tune.uniform(1., 100.)
 
 
 def objective(args):
@@ -62,9 +62,11 @@ def objective(args):
 
         for sst_daily, z in zip(sst_train, noise):
             if cli_args.kernel == 'RBF':
-                kernel = ConstantKernel(constant_value=args['constant_value']) * RBF(length_scale=args['length_scale'])
+                kernel = ConstantKernel(constant_value=args['constant_value'], constant_value_bounds=args['constant_value_bounds']) * \
+                         RBF(length_scale=args['length_scale'], length_scale_bounds=args['length_scale_bounds'])
             else:
-                kernel = ConstantKernel(constant_value=args['constant_value']) * Matern(length_scale=args['length_scale'], nu=args['nu'])
+                kernel = ConstantKernel(constant_value=args['constant_value'], constant_value_bounds=args['constant_value_bounds']) * \
+                         Matern(length_scale=args['length_scale'], length_scale_bounds=args['length_scale_bounds'], nu=args['nu'])
 
             gpr = GaussianProcessRegressor(kernel=kernel)
             gpr.fit(positions_train.reshape(2, -1).T, sst_daily)
