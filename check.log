@@ -1,8 +1,4 @@
-2022-12-03 23:13:09,175:DEBUG: matplotlib data path: /usr/local/lib/python3.8/site-packages/matplotlib/mpl-data
-2022-12-03 23:13:09,208:DEBUG: CONFIGDIR=/root/.config/matplotlib
-2022-12-03 23:13:09,209:DEBUG: interactive is False
-2022-12-03 23:13:09,209:DEBUG: platform is linux
-2022-12-03 23:13:09,239:DEBUG: CACHEDIR=/root/.cache/matplotlib
-2022-12-03 23:13:09,240:DEBUG: font search path [PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/ttf'), PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/afm'), PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/pdfcorefonts')]
-2022-12-03 23:13:09,350:INFO: generated new fontManager
-2022-12-03 23:13:09,758:DEBUG: Successful simulation
+2022-12-18 00:02:35,283:DEBUG: CACHEDIR=/Users/konstantin/.matplotlib
+2022-12-18 00:02:35,285:DEBUG: Using fontManager instance from /Users/konstantin/.matplotlib/fontlist-v330.json
+2022-12-18 00:02:35,530:DEBUG: Loaded backend module://backend_interagg version unknown.
+2022-12-18 00:02:36,378:DEBUG: Successful simulation
