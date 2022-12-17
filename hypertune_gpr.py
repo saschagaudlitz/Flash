@@ -63,10 +63,10 @@ def objective(args):
         for sst_daily, z in zip(sst_train, noise):
             if cli_args.kernel == 'RBF':
                 kernel = ConstantKernel(constant_value=args['constant_value'], constant_value_bounds=args['constant_value_bounds']) * \
-                         RBF(length_scale=args['length_scale'], length_scale_bounds=args['length_scale_bounds'])
+                         RBF(length_scale=args['length_scale'], length_scale_bounds="fixed")
             else:
                 kernel = ConstantKernel(constant_value=args['constant_value'], constant_value_bounds=args['constant_value_bounds']) * \
-                         Matern(length_scale=args['length_scale'], length_scale_bounds=args['length_scale_bounds'], nu=args['nu'])
+                         Matern(length_scale=args['length_scale'], length_scale_bounds="fixed", nu=args['nu'])
 
             gpr = GaussianProcessRegressor(kernel=kernel)
             gpr.fit(positions_train.reshape(2, -1).T, sst_daily)
