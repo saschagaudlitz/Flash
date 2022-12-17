@@ -101,7 +101,7 @@ if __name__ == '__main__':
             name="mlflow",
             callbacks=[MLflowLoggerCallback(
                 tracking_uri=mlflow.get_tracking_uri(),
-                experiment_name=f"{cli_args.year} CV{cli_args.cv}",
+                experiment_name=f"{cli_args.kernel} {cli_args.year} CV{cli_args.cv}",
                 save_artifact=True,
             )],
         ),
