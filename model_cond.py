@@ -14,6 +14,14 @@
 import numpy as np
 import os
 
+import sys
+
+sys.path.append('/parameters/20221217')
+
+import mlflow
+import torch
+
+
 # <!> DO NOT ADD ANY OTHER ARGUMENTS <!>
 def generative_model(noise, position):
     """
@@ -26,15 +34,8 @@ def generative_model(noise, position):
     """
     # See below an example
     # ---------------------
-    latent_variable = noise[:, :10]  # use the first 10 dimensions of the noise
-    
-    # load my parameters (of dimension 10 in this example). 
-    # <!> be sure that they are stored in the parameters/ directory <!>
-    parameters = np.load(os.path.join("parameters", "example_params.npy"))
+    latent_variable = torch.Tensor(noise[:, :7])
+    model = mlflow.pytorch.load_model('parameters/20221217/best_ad_mean')
+    samples = model.sample(latent_variable, position).detach().numpy()
 
-    # in this example, we concatenate the latent variable with the covariate
-    X = np.concatenate([latent_variable, np.tile(position, (latent_variable.shape[0] ,1))], axis=1)
-    return np.maximum(0, X @ parameters)
-
-
-
+    return samples

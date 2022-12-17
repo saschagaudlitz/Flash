@@ -33,7 +33,7 @@ def run(config, mode='train', enable_progress_bar=True, callbacks=None):
         weights_model = weights_models[weights_model_params['model_name']](**weights_model_params['kwargs'])
 
     n_dim = len(config['data_params']['train_dims'])
-    n_latent_dim = len(config['data_params']['test_dims'])
+    n_latent_dim = len(config['data_params']['test_dims']) + 1
     model = models[config['model_params']['model_name']](**config['model_params'], datamodule=datamodule, ts_model=ts_model, weights_model=weights_model, n_dim=n_dim, n_latent_dim=n_latent_dim)
 
     # initialize experiment
