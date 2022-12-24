@@ -1,1 +1,8 @@
-2022-12-23 14:23:22,921:DEBUG: Successful simulation
+2022-12-24 14:08:43,984:DEBUG: matplotlib data path: /usr/local/lib/python3.8/site-packages/matplotlib/mpl-data
+2022-12-24 14:08:43,987:DEBUG: CONFIGDIR=/root/.config/matplotlib
+2022-12-24 14:08:43,987:DEBUG: interactive is False
+2022-12-24 14:08:43,987:DEBUG: platform is linux
+2022-12-24 14:08:44,011:DEBUG: CACHEDIR=/root/.cache/matplotlib
+2022-12-24 14:08:44,011:DEBUG: font search path [PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/ttf'), PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/afm'), PosixPath('/usr/local/lib/python3.8/site-packages/matplotlib/mpl-data/fonts/pdfcorefonts')]
+2022-12-24 14:08:44,111:INFO: generated new fontManager
+2022-12-24 14:08:44,801:DEBUG: Successful simulation
