@@ -5,9 +5,9 @@
 ## Contact
 genhack@polytechnique.fr
 
-> Note that the GPR model corresponding to the second part of the challenge remains in the `gpr` branch.
-
 # Workflow
+
+> Note that the GPR model corresponding to the second part of the challenge remains in the `gpr` branch.
 
 ## Model development
 
