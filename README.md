@@ -7,8 +7,6 @@ genhack@polytechnique.fr
 
 # Workflow
 
-> Note that the GPR model corresponding to the second part of the challenge remains in the `gpr` branch.
-
 ## Model development
 
 > See `models/maf.py` for a working example.
